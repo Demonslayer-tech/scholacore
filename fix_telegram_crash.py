@@ -1,4 +1,27 @@
-import {
+#!/usr/bin/env python3
+"""
+ScholaCore: fix uncaught crash when the app is opened outside Telegram.
+
+Writes the corrected src/lib/telegram.ts, then runs git add / commit /
+push automatically.
+
+Run with:
+    python fix_telegram_crash.py
+
+If your project folder isn't at the path below, edit PROJECT_DIR first.
+"""
+import subprocess
+import sys
+from pathlib import Path
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except AttributeError:
+    pass
+
+PROJECT_DIR = Path(r"C:\Users\Bosslady\SCHOLACORE\scholacore")
+
+TELEGRAM_TS = r'''import {
   init,
   retrieveLaunchParams,
   backButton,
@@ -118,3 +141,68 @@ export function hapticError(): void {
     hapticFeedback.notificationOccurred('error');
   }
 }
+'''
+
+FILES = {
+    PROJECT_DIR / "src" / "lib" / "telegram.ts": TELEGRAM_TS,
+}
+
+
+def write_files():
+    print("== Writing files ==")
+    for path, content in FILES.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        print("  wrote " + str(path.relative_to(PROJECT_DIR)))
+
+
+def run_git(args, allow_fail_msg=None):
+    result = subprocess.run(
+        ["git"] + args, cwd=str(PROJECT_DIR), capture_output=True, text=True
+    )
+    output = (result.stdout + result.stderr).strip()
+    if output:
+        print(output)
+    if result.returncode != 0 and allow_fail_msg:
+        print("  (ok - " + allow_fail_msg + ")")
+    return result.returncode
+
+
+def main():
+    if not PROJECT_DIR.exists():
+        print("ERROR: " + str(PROJECT_DIR) + " does not exist.")
+        print("Edit PROJECT_DIR at the top of this script to match your actual folder, then re-run.")
+        sys.exit(1)
+
+    if not (PROJECT_DIR / ".git").exists():
+        print("ERROR: " + str(PROJECT_DIR) + " is not a git repo (no .git folder found).")
+        sys.exit(1)
+
+    write_files()
+
+    print("\n== git add ==")
+    run_git(["add", "-A"])
+
+    print("\n== git commit ==")
+    run_git(
+        ["commit", "-m", "Fix uncaught crash in initTelegramApp() outside Telegram"],
+        allow_fail_msg="nothing new to commit, files already matched",
+    )
+
+    print("\n== git push ==")
+    code = run_git(["push"])
+    if code != 0:
+        print("\ngit push reported an error above (auth prompt needed? no upstream set?).")
+        print("Everything else is done - just run 'git push' yourself to finish.")
+        sys.exit(1)
+
+    print("\nDone. Vercel should auto-redeploy in about 1-2 minutes.")
+    print("After that: the bare URL in a normal browser tab will show")
+    print("'Open in Telegram' instead of blank white - that's the real fix here.")
+    print("To test the ACTUAL app working end to end, it still needs to be")
+    print("opened through Telegram itself (your bot's menu button / t.me link),")
+    print("since that's the only place real launch data exists.")
+
+
+if __name__ == "__main__":
+    main()
