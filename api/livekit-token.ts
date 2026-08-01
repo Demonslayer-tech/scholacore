@@ -1,16 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { AccessToken } from 'livekit-server-sdk';
+import { verifyCaller } from './_lib/verifyCaller';
 import { getAdminFirestore } from './_lib/firebaseAdmin';
 
 interface TokenRequestBody {
-  telegramId: string;
   classId: string;
 }
 
 function isValidBody(body: unknown): body is TokenRequestBody {
   if (!body || typeof body !== 'object') return false;
   const b = body as Record<string, unknown>;
-  return typeof b.telegramId === 'string' && typeof b.classId === 'string';
+  return typeof b.classId === 'string';
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -26,18 +26,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Live classroom service misconfigured' });
   }
 
-  if (!isValidBody(req.body)) {
-    return res.status(400).json({ error: 'Invalid payload. Required: telegramId, classId.' });
+  // Previously this trusted a `telegramId` field straight from the request
+  // body to decide canPublish — meaning anyone could ask for a teacher's
+  // publish permissions just by sending that teacher's ID. The identity
+  // used below always comes from a verified Firebase ID token instead.
+  const caller = await verifyCaller(req);
+  if (!caller) {
+    return res.status(401).json({ error: 'Not signed in' });
   }
 
-  const { telegramId, classId } = req.body;
+  if (!isValidBody(req.body)) {
+    return res.status(400).json({ error: 'Invalid payload. Required: classId.' });
+  }
+
+  const { classId } = req.body;
 
   try {
-    // Role is looked up server-side from Firestore rather than trusted from
-    // the client — a student sending { role: "teacher" } in the request
-    // body must never be able to grant themselves publish permissions.
     const db = getAdminFirestore();
-    const userSnap = await db.collection('users').doc(telegramId).get();
+    const userSnap = await db.collection('users').doc(caller.telegramId).get();
 
     if (!userSnap.exists) {
       return res.status(404).json({ error: 'User not found' });
@@ -54,8 +60,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const roomName = `class-${classId}`;
 
     const token = new AccessToken(apiKey, apiSecret, {
-      identity: telegramId,
-      name: userData.name ?? telegramId,
+      identity: caller.telegramId,
+      name: userData.name ?? caller.telegramId,
       // Short-lived — a student re-requests a fresh token each time they
       // join, rather than holding a long-lived credential.
       ttl: '15m'

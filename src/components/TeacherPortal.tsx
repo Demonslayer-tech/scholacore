@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, getAuthToken } from '../lib/firebase';
 import { useScholaCoreUser } from '../App';
 import { hapticError, hapticSuccess } from '../lib/telegram';
 
@@ -79,10 +79,18 @@ export default function TeacherPortal() {
         submittedAt: serverTimestamp()
       });
 
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error('Your session expired — please close and reopen the app.');
+      }
+
       const res = await fetch('/api/vet-teacher', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ applicantId, fullName: fullName.trim(), specialties, essayAnswers })
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ fullName: fullName.trim(), specialties, essayAnswers })
       });
 
       const data = await res.json();

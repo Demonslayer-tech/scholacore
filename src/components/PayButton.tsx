@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PaystackPop from '@paystack/inline-js';
 import { useScholaCoreUser } from '../App';
+import { getAuthToken } from '../lib/firebase';
 import { hapticError, hapticSuccess } from '../lib/telegram';
 
 interface PayButtonProps {
@@ -12,7 +13,7 @@ interface PayButtonProps {
 }
 
 export default function PayButton({ email, amountInNaira, lessonId, label, onSuccess }: PayButtonProps) {
-  const { telegramUser, userRecord } = useScholaCoreUser();
+  const { telegramUser } = useScholaCoreUser();
   const [status, setStatus] = useState<'idle' | 'initializing' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -22,16 +23,23 @@ export default function PayButton({ email, amountInNaira, lessonId, label, onSuc
     setErrorMessage(null);
 
     try {
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error('Your session expired — please close and reopen the app.');
+      }
+
+      // studentId and the amount are deliberately NOT sent here — the
+      // server derives both from the verified token + Firestore (see
+      // api/initialize-payment.ts), so this client can't influence what
+      // actually gets charged. amountInNaira above is only used for the
+      // button's displayed label.
       const res = await fetch('/api/initialize-payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          amountInNaira,
-          studentId: userRecord?.studentId ?? telegramUser.telegramId,
-          lessonId,
-          telegramChatId: telegramUser.telegramId
-        })
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ email, lessonId })
       });
 
       const data = await res.json();

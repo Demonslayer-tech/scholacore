@@ -86,3 +86,15 @@ export const auth = authInstance! as Auth;
 export async function signInWithTelegramToken(customToken: string) {
   return signInWithCustomToken(auth, customToken);
 }
+
+/**
+ * ID token for the currently signed-in user, to send as
+ * `Authorization: Bearer <token>` on calls to endpoints that verify the
+ * caller server-side (initialize-payment, livekit-token, vet-teacher,
+ * ai-tutor — see api/_lib/verifyCaller.ts). Returns null if nobody's
+ * signed in yet.
+ */
+export async function getAuthToken(): Promise<string | null> {
+  if (!auth.currentUser) return null;
+  return auth.currentUser.getIdToken();
+}

@@ -122,8 +122,24 @@ match /databases/{database}/documents {
       !('aiSummary' in request.resource.data) &&
       request.resource.data.status == 'SUBMITTED';
 
-    allow update: if hasRole('principal') &&
-      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+    // An applicant can re-save their own application (e.g. TeacherPortal's
+    // setDoc runs a second time after a network hiccup) only while it's
+    // still in SUBMITTED — i.e. before AI scoring or a principal's
+    // decision has landed. vet-teacher.ts writes aiScore/aiSummary/status
+    // via the Admin SDK immediately after create, which bypasses rules
+    // entirely, so this window only matters if that call never completed.
+    // Once status moves to HIRE/INTERVIEW/REJECT, only principal can touch
+    // the record — the applicant can no longer edit a decision that's
+    // already been made.
+    allow update: if (
+        isSelf(applicantId) &&
+        resource.data.status == 'SUBMITTED' &&
+        request.resource.data.status == 'SUBMITTED' &&
+        !('aiScore' in request.resource.data) &&
+        !('aiSummary' in request.resource.data)
+      ) ||
+      (hasRole('principal') &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
 
     allow delete: if hasRole('principal');
   }
@@ -161,8 +177,7 @@ match /databases/{database}/documents {
     allow read: if isSignedIn() && (
       resource.data.isPremium == false ||
       isStaff() ||
-      (isSignedIn() &&
-        get(/databases/$(database)/documents/users/$(uid())).data.unlockedLessons[lessonId] == true)
+      get(/databases/$(database)/documents/users/$(uid())).data.unlockedLessons[lessonId] == true
     );
     allow write: if hasAnyRole(['teacher', 'principal']);
   }

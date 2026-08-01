@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI } from '@google/genai';
+import { verifyCaller } from './_lib/verifyCaller';
 
 interface AiTutorBody {
   studentQuestion: string;
@@ -32,16 +32,29 @@ Rules:
   answer with explanation and a worked example, then a similar practice prompt.
 - If a question is inappropriate, off-topic, or unsafe, gently redirect to the lesson.`;
 
+interface GroqChatResponse {
+  choices?: { message?: { content?: string } }[];
+  error?: { message?: string };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    console.error('[ai-tutor] Missing GEMINI_API_KEY');
+    console.error('[ai-tutor] Missing GROQ_API_KEY');
     return res.status(500).json({ error: 'AI tutor service misconfigured' });
+  }
+
+  // Without this, anyone who finds this URL (it's public, no secret in the
+  // path) could hammer it for free and burn through Groq's rate-limited
+  // free tier without ever opening the app.
+  const caller = await verifyCaller(req);
+  if (!caller) {
+    return res.status(401).json({ error: 'Not signed in' });
   }
 
   if (!isValidBody(req.body)) {
@@ -51,30 +64,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { studentQuestion, lessonContext } = req.body;
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text:
-                `LESSON CONTEXT:\n${lessonContext}\n\n` +
-                `STUDENT QUESTION:\n${studentQuestion}`
-            }
-          ]
-        }
-      ],
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
+    // Groq's Chat Completions API is OpenAI-shaped: POST to
+    // /openai/v1/chat/completions with a Bearer token — no SDK needed,
+    // matching the plain-fetch style already used for Paystack/Telegram
+    // elsewhere in this codebase. openai/gpt-oss-20b is Groq's fast
+    // general-purpose model (roughly 1000 tok/s on their LPU hardware),
+    // plenty for a conversational tutor, and available on Groq's free tier.
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-20b',
+        messages: [
+          { role: 'system', content: SYSTEM_INSTRUCTION },
+          {
+            role: 'user',
+            content: `LESSON CONTEXT:\n${lessonContext}\n\nSTUDENT QUESTION:\n${studentQuestion}`
+          }
+        ],
         temperature: 0.6,
-        maxOutputTokens: 800
-      }
+        max_completion_tokens: 800
+      })
     });
 
-    const answer = response.text?.trim();
+    const data = (await groqRes.json()) as GroqChatResponse;
+
+    if (!groqRes.ok) {
+      console.error('[ai-tutor] Groq rejected the request', data);
+      return res.status(502).json({ error: data.error?.message || 'AI tutor request failed' });
+    }
+
+    const answer = data.choices?.[0]?.message?.content?.trim();
 
     if (!answer) {
       return res.status(502).json({ error: 'AI tutor returned an empty response' });
@@ -82,7 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({ answer });
   } catch (err) {
-    console.error('[ai-tutor] Gemini request failed', err);
+    console.error('[ai-tutor] Groq request failed', err);
     return res.status(500).json({ error: 'Unable to reach the AI tutor right now' });
   }
 }

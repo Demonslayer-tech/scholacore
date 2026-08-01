@@ -1,9 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI, Type } from '@google/genai';
 import { getAdminFirestore } from './_lib/firebaseAdmin';
+import { verifyCaller } from './_lib/verifyCaller';
 
 interface VetTeacherBody {
-  applicantId: string;
   fullName: string;
   specialties: string[];
   essayAnswers: Record<string, string>;
@@ -19,7 +18,6 @@ function isValidBody(body: unknown): body is VetTeacherBody {
   if (!body || typeof body !== 'object') return false;
   const b = body as Record<string, unknown>;
   return (
-    typeof b.applicantId === 'string' &&
     typeof b.fullName === 'string' &&
     Array.isArray(b.specialties) &&
     typeof b.essayAnswers === 'object' &&
@@ -42,68 +40,100 @@ needs a conversation), below 60 REJECT (significant gaps). Be fair and consisten
 inflate scores out of politeness. Provide a concise, specific summary a principal can act
 on in under 30 seconds of reading.`;
 
+interface GroqChatResponse {
+  choices?: { message?: { content?: string } }[];
+  error?: { message?: string };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    console.error('[vet-teacher] Missing GEMINI_API_KEY');
+    console.error('[vet-teacher] Missing GROQ_API_KEY');
     return res.status(500).json({ error: 'Vetting service misconfigured' });
   }
 
+  // Previously `applicantId` came straight from the request body, meaning
+  // anyone could overwrite a DIFFERENT applicant's score/status just by
+  // sending their ID. It's now taken from the verified token instead.
+  const caller = await verifyCaller(req);
+  if (!caller) {
+    return res.status(401).json({ error: 'Not signed in' });
+  }
+  const applicantId = caller.telegramId;
+
   if (!isValidBody(req.body)) {
     return res.status(400).json({
-      error: 'Invalid payload. Required: applicantId, fullName, specialties, essayAnswers.'
+      error: 'Invalid payload. Required: fullName, specialties, essayAnswers.'
     });
   }
 
-  const { applicantId, fullName, specialties, essayAnswers } = req.body;
+  const { fullName, specialties, essayAnswers } = req.body;
 
   const essayBlock = Object.entries(essayAnswers)
     .map(([question, answer]) => `Q: ${question}\nA: ${answer}`)
     .join('\n\n');
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text:
-                `Applicant: ${fullName}\n` +
-                `Declared specialties: ${specialties.join(', ')}\n\n` +
-                `Essay responses:\n${essayBlock}`
-            }
-          ]
-        }
-      ],
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
+    // Groq's Structured Outputs (json_schema + strict: true) uses
+    // constrained decoding, so the response is guaranteed to match this
+    // schema exactly — same reliability guarantee the Gemini version had
+    // via responseSchema, no retry/re-parse logic needed. Using
+    // openai/gpt-oss-120b (the larger of Groq's two general-purpose
+    // models) here rather than the -20b used in ai-tutor.ts, since this
+    // task is a judgment call on a real hiring decision and is worth the
+    // extra quality — it's not a latency-sensitive live chat.
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { role: 'system', content: SYSTEM_INSTRUCTION },
+          {
+            role: 'user',
+            content:
+              `Applicant: ${fullName}\n` +
+              `Declared specialties: ${specialties.join(', ')}\n\n` +
+              `Essay responses:\n${essayBlock}`
+          }
+        ],
         temperature: 0.3,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            score: { type: Type.NUMBER },
-            summary: { type: Type.STRING },
-            recommendation: {
-              type: Type.STRING,
-              enum: ['HIRE', 'INTERVIEW', 'REJECT']
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'teacher_vetting_result',
+            strict: true,
+            schema: {
+              type: 'object',
+              properties: {
+                score: { type: 'integer', minimum: 0, maximum: 100 },
+                summary: { type: 'string' },
+                recommendation: { type: 'string', enum: ['HIRE', 'INTERVIEW', 'REJECT'] }
+              },
+              required: ['score', 'summary', 'recommendation'],
+              additionalProperties: false
             }
-          },
-          required: ['score', 'summary', 'recommendation']
+          }
         }
-      }
+      })
     });
 
-    const raw = response.text?.trim();
+    const data = (await groqRes.json()) as GroqChatResponse;
+
+    if (!groqRes.ok) {
+      console.error('[vet-teacher] Groq rejected the request', data);
+      return res.status(502).json({ error: data.error?.message || 'Vetting request failed' });
+    }
+
+    const raw = data.choices?.[0]?.message?.content?.trim();
     if (!raw) {
       return res.status(502).json({ error: 'Vetting AI returned an empty response' });
     }
@@ -112,12 +142,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       result = JSON.parse(raw) as VetResult;
     } catch {
-      console.error('[vet-teacher] Failed to parse Gemini JSON output', raw);
+      console.error('[vet-teacher] Failed to parse Groq JSON output', raw);
       return res.status(502).json({ error: 'Vetting AI returned malformed output' });
     }
 
-    // Clamp defensively even though we asked for a strict schema — models
-    // occasionally drift outside requested bounds.
+    // Clamp defensively even under strict schema mode — cheap insurance.
     result.score = Math.max(0, Math.min(100, Math.round(result.score)));
 
     const db = getAdminFirestore();
@@ -129,7 +158,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json(result);
   } catch (err) {
-    console.error('[vet-teacher] Gemini request failed', err);
+    console.error('[vet-teacher] Groq request failed', err);
     return res.status(500).json({ error: 'Unable to complete AI vetting right now' });
   }
 }

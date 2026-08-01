@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LiveKitRoom, VideoConference, RoomAudioRenderer, formatChatMessageLinks } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { useScholaCoreUser } from '../App';
+import { getAuthToken } from '../lib/firebase';
 
 const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL as string; // wss://<project>.livekit.cloud
 
@@ -25,10 +26,18 @@ export default function LiveClassroom() {
     setErrorMessage(null);
 
     try {
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error('Your session expired — please close and reopen the app.');
+      }
+
       const res = await fetch('/api/livekit-token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: telegramUser.telegramId, classId })
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ classId })
       });
       const data = await res.json();
 
