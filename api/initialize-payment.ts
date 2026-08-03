@@ -2,8 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyCaller } from './_lib/verifyCaller';
 import { getAdminFirestore } from './_lib/firebaseAdmin';
 
-// Naira amounts under this threshold ride Paystack's micro-transaction fee
-// waiver, per ScholaCore's pay-per-lesson pricing model.
 const MICRO_FEE_THRESHOLD_NAIRA = 2500;
 
 interface InitializePaymentBody {
@@ -45,10 +43,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Payment service misconfigured' });
   }
 
-  // Identity is verified server-side, never trusted from the request body —
-  // this used to accept `amountInNaira` and `studentId` directly from the
-  // client, which meant anyone could initiate a payment for an arbitrary
-  // amount against an arbitrary student. Both are now derived below.
   const caller = await verifyCaller(req);
   if (!caller) {
     return res.status(401).json({ error: 'Not signed in' });
@@ -63,10 +57,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const db = getAdminFirestore();
 
-    // A parent's own account links to their child via `studentId`; a
-    // student paying for themselves has no such link, so their own
-    // telegramId IS the studentId. Either way this is looked up from
-    // Firestore, not taken from anything the client sent.
     let studentId = caller.telegramId;
     if (caller.role === 'parent') {
       const callerDoc = await db.collection('users').doc(caller.telegramId).get();
@@ -92,11 +82,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const feeData = feeDoc.data() as FeeSchedule;
 
-    // The authoritative amount is computed here, from Firestore, not from
-    // the client. For a specific lesson, it's that lesson's micro-fee. For
-    // a full-balance payment, it's tuition + mandatory fees minus whatever
-    // has already been paid successfully — recomputed fresh each time so a
-    // stale client-side balance can't be replayed for a stale (lower) price.
     let amountInNaira: number;
     if (lessonId) {
       if (!feeData.lessonMicroFee) {
@@ -120,7 +105,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Paystack expects the smallest currency unit (kobo). 1 Naira = 100 Kobo.
     const amountInKobo = Math.round(amountInNaira * 100);
     const isMicroPayment = amountInNaira < MICRO_FEE_THRESHOLD_NAIRA;
 
@@ -134,10 +118,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         email,
         amount: amountInKobo,
         currency: 'NGN',
-        // Metadata round-trips through the webhook, letting us reconcile the
-        // charge back to the right student/lesson/chat without a second DB
-        // lookup at webhook time. Every value here came from server-side
-        // lookups above, not from the request body.
         metadata: {
           studentId,
           lessonId: lessonId ?? null,

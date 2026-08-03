@@ -3,11 +3,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db, signInWithTelegramToken, firebaseConfigError } from './lib/firebase';
 import { initTelegramApp, getTelegramUser, getRawInitData, type ScholaCoreTelegramUser } from './lib/telegram';
 
-// Lazy-loaded: LiveClassroom pulls in the full LiveKit client SDK and
-// BursaryDashboard pulls in Paystack's inline-js, both of which are large
-// and only needed once a user actually opens that tab. Splitting these out
-// keeps the first paint fast on a mobile Telegram WebView, which is where
-// this app lives.
 const BursaryDashboard = lazy(() => import('./components/BursaryDashboard'));
 const LiveClassroom = lazy(() => import('./components/LiveClassroom'));
 const AdmissionForm = lazy(() => import('./components/AdmissionForm'));
@@ -62,14 +57,6 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /**
-   * Trades Telegram-signed initData for a Firebase session. This is the
-   * ONLY place a Firebase custom token is minted — it always goes through
-   * /api/auth-telegram, which re-verifies initData's HMAC signature against
-   * the bot token server-side before issuing a token with a `role` claim.
-   * Without this step request.auth is null and firestore.rules refuses
-   * every read/write, so nothing below runs until this resolves.
-   */
   async function bootstrapSession() {
     const rawInitData = getRawInitData();
     const tgUser = getTelegramUser();
@@ -80,10 +67,6 @@ export default function App() {
       return;
     }
 
-    // Catches malformed Vercel env vars instantly, with a specific
-    // on-screen message — no need to attempt a network round-trip (or find
-    // a way to open devtools on a phone inside Telegram) just to learn
-    // Firebase's config is broken.
     if (firebaseConfigError) {
       setAuthError(firebaseConfigError);
       setLoading(false);

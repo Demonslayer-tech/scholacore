@@ -49,9 +49,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'AI tutor service misconfigured' });
   }
 
-  // Without this, anyone who finds this URL (it's public, no secret in the
-  // path) could hammer it for free and burn through Groq's rate-limited
-  // free tier without ever opening the app.
   const caller = await verifyCaller(req);
   if (!caller) {
     return res.status(401).json({ error: 'Not signed in' });
@@ -64,12 +61,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { studentQuestion, lessonContext } = req.body;
 
   try {
-    // Groq's Chat Completions API is OpenAI-shaped: POST to
-    // /openai/v1/chat/completions with a Bearer token — no SDK needed,
-    // matching the plain-fetch style already used for Paystack/Telegram
-    // elsewhere in this codebase. openai/gpt-oss-20b is Groq's fast
-    // general-purpose model (roughly 1000 tok/s on their LPU hardware),
-    // plenty for a conversational tutor, and available on Groq's free tier.
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {

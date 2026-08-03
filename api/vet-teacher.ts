@@ -57,9 +57,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Vetting service misconfigured' });
   }
 
-  // Previously `applicantId` came straight from the request body, meaning
-  // anyone could overwrite a DIFFERENT applicant's score/status just by
-  // sending their ID. It's now taken from the verified token instead.
   const caller = await verifyCaller(req);
   if (!caller) {
     return res.status(401).json({ error: 'Not signed in' });
@@ -79,14 +76,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .join('\n\n');
 
   try {
-    // Groq's Structured Outputs (json_schema + strict: true) uses
-    // constrained decoding, so the response is guaranteed to match this
-    // schema exactly — same reliability guarantee the Gemini version had
-    // via responseSchema, no retry/re-parse logic needed. Using
-    // openai/gpt-oss-120b (the larger of Groq's two general-purpose
-    // models) here rather than the -20b used in ai-tutor.ts, since this
-    // task is a judgment call on a real hiring decision and is worth the
-    // extra quality — it's not a latency-sensitive live chat.
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -146,7 +135,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(502).json({ error: 'Vetting AI returned malformed output' });
     }
 
-    // Clamp defensively even under strict schema mode — cheap insurance.
     result.score = Math.max(0, Math.min(100, Math.round(result.score)));
 
     const db = getAdminFirestore();

@@ -28,11 +28,6 @@ export default function PayButton({ email, amountInNaira, lessonId, label, onSuc
         throw new Error('Your session expired — please close and reopen the app.');
       }
 
-      // studentId and the amount are deliberately NOT sent here — the
-      // server derives both from the verified token + Firestore (see
-      // api/initialize-payment.ts), so this client can't influence what
-      // actually gets charged. amountInNaira above is only used for the
-      // button's displayed label.
       const res = await fetch('/api/initialize-payment', {
         method: 'POST',
         headers: {
@@ -48,11 +43,6 @@ export default function PayButton({ email, amountInNaira, lessonId, label, onSuc
         throw new Error(data.error || 'Could not start payment');
       }
 
-      // resumeTransaction() picks up a transaction that was already
-      // initialized server-side (api/initialize-payment.ts) via the access
-      // code — it doesn't need the Paystack public key, and critically it
-      // means the amount charged is whatever the server set, not whatever
-      // this client happens to send.
       const paystack = new PaystackPop();
       paystack.resumeTransaction(data.accessCode, {
         onSuccess: (transaction: { reference: string }) => {

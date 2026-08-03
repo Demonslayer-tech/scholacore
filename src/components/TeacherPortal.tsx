@@ -65,11 +65,6 @@ export default function TeacherPortal() {
     const applicantId = telegramUser.telegramId;
 
     try {
-      // The client writes the raw application — allowed because it's
-      // self-created, contains no aiScore/aiSummary, and status is
-      // SUBMITTED (see firestore.rules). The score gets filled in
-      // immediately after via the Admin SDK in /api/vet-teacher, which a
-      // client can never write to directly.
       await setDoc(doc(db, 'teacherApplications', applicantId), {
         fullName: fullName.trim(),
         cvUrl: cvUrl.trim(),

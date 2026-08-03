@@ -2,10 +2,6 @@ import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, signInWithCustomToken, type Auth } from 'firebase/auth';
 
-// Firebase client config is public by design (it identifies the project,
-// not a secret) — real access control lives in firestore.rules + custom
-// auth claims, not in hiding these values. Populate with your ScholaCore
-// Firebase project's web app config.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,21 +11,6 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-/**
- * Firebase's own SDK fails with cryptic native browser errors when a config
- * value is missing or malformed — e.g. WebKit's
- * `TypeError: The string did not match the expected pattern.` when
- * authDomain isn't shaped like a real domain. That's almost always a Vercel
- * env var that's blank, or was pasted with a stray "https://" prefix,
- * quotes, or trailing whitespace.
- *
- * We check the obvious cases up front and surface them through
- * `firebaseConfigError` (read by App.tsx before it attempts sign-in)
- * instead of letting the SDK throw mid-call. This deliberately does NOT
- * throw at module scope — throwing here would happen before React mounts
- * anything, which on a phone inside Telegram just means a blank screen
- * with no way to read the message.
- */
 function findFirebaseConfigProblem(config: typeof firebaseConfig): string | null {
   const required = ['apiKey', 'authDomain', 'projectId', 'appId'] as const;
   const missing = required.filter((key) => !config[key]);
@@ -65,11 +46,6 @@ try {
   dbInstance = getFirestore(appInstance);
   authInstance = getAuth(appInstance);
 } catch (err) {
-  // Falls through to firebaseConfigError (or a fresh one, below) — App.tsx
-  // never touches app/db/auth when an error is set, so leaving these
-  // unassigned here is safe. The `as` casts just keep every OTHER file's
-  // types simple (plain Firestore, not Firestore | undefined) since they
-  // can never actually be reached in this failure path.
   console.error('[firebase] initialization failed:', err);
 }
 
@@ -77,23 +53,10 @@ export const app = appInstance! as FirebaseApp;
 export const db = dbInstance! as Firestore;
 export const auth = authInstance! as Auth;
 
-/**
- * Exchanges a server-minted Firebase custom token (produced from verified
- * Telegram initData — see lib/telegram.ts + api/auth-telegram.ts) for a
- * signed-in Firebase Auth session. This is what lets firestore.rules read
- * request.auth.token.role.
- */
 export async function signInWithTelegramToken(customToken: string) {
   return signInWithCustomToken(auth, customToken);
 }
 
-/**
- * ID token for the currently signed-in user, to send as
- * `Authorization: Bearer <token>` on calls to endpoints that verify the
- * caller server-side (initialize-payment, livekit-token, vet-teacher,
- * ai-tutor — see api/_lib/verifyCaller.ts). Returns null if nobody's
- * signed in yet.
- */
 export async function getAuthToken(): Promise<string | null> {
   if (!auth.currentUser) return null;
   return auth.currentUser.getIdToken();

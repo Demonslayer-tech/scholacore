@@ -26,10 +26,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Live classroom service misconfigured' });
   }
 
-  // Previously this trusted a `telegramId` field straight from the request
-  // body to decide canPublish — meaning anyone could ask for a teacher's
-  // publish permissions just by sending that teacher's ID. The identity
-  // used below always comes from a verified Firebase ID token instead.
   const caller = await verifyCaller(req);
   if (!caller) {
     return res.status(401).json({ error: 'Not signed in' });
@@ -52,7 +48,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const userData = userSnap.data()!;
     const isTeacher = userData.role === 'teacher' || userData.role === 'principal';
 
-    // A student may only join the classroom for their own enrolled class.
     if (!isTeacher && userData.classId !== classId) {
       return res.status(403).json({ error: 'Not enrolled in this class' });
     }
@@ -62,8 +57,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const token = new AccessToken(apiKey, apiSecret, {
       identity: caller.telegramId,
       name: userData.name ?? caller.telegramId,
-      // Short-lived — a student re-requests a fresh token each time they
-      // join, rather than holding a long-lived credential.
       ttl: '15m'
     });
 

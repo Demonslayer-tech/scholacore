@@ -19,26 +19,12 @@ export interface ScholaCoreTelegramUser {
 
 let initialized = false;
 
-/**
- * Boots the Telegram Mini App SDK. Safe to call multiple times — subsequent
- * calls are no-ops. Expands the viewport and enables the back button so the
- * app feels native inside Telegram rather than like an embedded website.
- */
 export function initTelegramApp(): void {
   if (initialized) return;
 
   try {
     init();
   } catch {
-    // init() throws when there's no real Telegram launch context at all —
-    // e.g. this URL opened directly in a normal browser tab rather than
-    // through Telegram, which is exactly how you'd test this in devtools.
-    // That's an expected, valid case: getTelegramUser()/getRawInitData()
-    // below already handle it gracefully and App.tsx shows an "Open in
-    // Telegram" message. But this call sits directly in a useEffect with
-    // no error boundary around it, so if we don't catch it HERE, it
-    // becomes an uncaught exception that blanks the entire page before
-    // React ever renders anything — which is exactly what was happening.
     initialized = true;
     return;
   }
@@ -54,13 +40,6 @@ export function initTelegramApp(): void {
   }
 }
 
-/**
- * Pulls the authenticated Telegram user out of launch params. This is
- * read-only client-side context for UI purposes (greeting the user, etc).
- * It must NOT be trusted for access control — always re-verify `initData`
- * server-side (HMAC against the bot token) before minting a Firebase custom
- * token or writing to Firestore on the user's behalf.
- */
 export function getTelegramUser(): ScholaCoreTelegramUser | null {
   try {
     const { initData } = retrieveLaunchParams();
@@ -80,11 +59,6 @@ export function getTelegramUser(): ScholaCoreTelegramUser | null {
   }
 }
 
-/**
- * Returns the raw, still-signed initData string. This is what gets sent to
- * the backend for HMAC verification — never parse-and-forward the parsed
- * object, since that discards the signature.
- */
 export function getRawInitData(): string | null {
   try {
     const { initDataRaw } = retrieveLaunchParams();

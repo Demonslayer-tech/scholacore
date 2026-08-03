@@ -4,7 +4,7 @@ import '@livekit/components-styles';
 import { useScholaCoreUser } from '../App';
 import { getAuthToken } from '../lib/firebase';
 
-const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL as string; // wss://<project>.livekit.cloud
+const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL as string;
 
 interface ClassroomSession {
   token: string;
@@ -95,15 +95,6 @@ export default function LiveClassroom() {
         onDisconnected={() => setSession(null)}
         style={{ height: '100%' }}
       >
-        {/*
-          Prebuilt LiveKit UI: grid layout, device controls, screen share,
-          and chat all come for free here. Whether a participant's own
-          publish controls actually do anything is enforced server-side by
-          the `canPublish` grant baked into the token (see
-          api/livekit-token.ts) — a student toggling their camera on in this
-          UI still can't broadcast, since the room itself rejects the
-          publish. This is UI-level courtesy, not the security boundary.
-        */}
         <VideoConference chatMessageFormatter={formatChatMessageLinks} />
         <RoomAudioRenderer />
       </LiveKitRoom>
