@@ -43,10 +43,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const telegramId = String(verified.user.id);
-  const db = getAdminFirestore();
-  const userRef = db.collection('users').doc(telegramId);
 
   try {
+    // getAdminFirestore() used to be called outside this try/catch. If it
+    // threw (e.g. FIREBASE_SERVICE_ACCOUNT_KEY missing or malformed), the
+    // exception was never caught by this code at all — it crashed the
+    // whole function, and Vercel's platform returned its own generic
+    // "A server error has occurred" HTML page instead of JSON. The client
+    // then failed trying to JSON.parse() that page, which is what
+    // produced the "Unexpected token 'A'..." error on screen.
+    const db = getAdminFirestore();
+    const userRef = db.collection('users').doc(telegramId);
+
     const snap = await userRef.get();
     const fallbackName = [verified.user.first_name, verified.user.last_name].filter(Boolean).join(' ');
 
@@ -90,6 +98,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     console.error('[auth-telegram] Failed to establish session', err);
-    return res.status(500).json({ error: 'Unable to establish session' });
+    // Surfacing the real message here (rather than a generic one) is
+    // deliberate — this endpoint's failures are almost always a
+    // deployment config problem (missing/malformed env var), and that's
+    // exactly what's needed on screen to actually fix it, with no way to
+    // read Vercel's function logs from inside Telegram's mobile WebView.
+    const message = err instanceof Error ? err.message : 'Unable to establish session';
+    return res.status(500).json({ error: message });
   }
 }

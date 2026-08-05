@@ -20,7 +20,18 @@ function getAdminApp(): App {
     throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_KEY environment variable');
   }
 
-  const serviceAccount = JSON.parse(rawKey);
+  let serviceAccount: object;
+  try {
+    serviceAccount = JSON.parse(rawKey);
+  } catch {
+    // A truncated paste or a stray quote/newline from Vercel's env var UI
+    // is the usual cause — this is deliberately more specific than a
+    // generic "invalid credential" error, since the fix is almost always
+    // "re-paste the full service account JSON as one line."
+    throw new Error(
+      'FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON. Re-paste the full service account JSON (from Firebase Console → Project Settings → Service Accounts → Generate new private key) as a single line, with no extra quotes added around it.'
+    );
+  }
 
   app = initializeApp({
     credential: cert(serviceAccount)
