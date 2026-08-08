@@ -3,16 +3,25 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db, signInWithTelegramToken, firebaseConfigError } from './lib/firebase';
 import { initTelegramApp, getTelegramUser, getRawInitData, type ScholaCoreTelegramUser } from './lib/telegram';
 
+// Lazy-loaded: LiveClassroom pulls in the full LiveKit client SDK and
+// BursaryDashboard pulls in Paystack's inline-js, both of which are large
+// and only needed once a user actually opens that tab. Splitting these out
+// keeps the first paint fast on a mobile Telegram WebView, which is where
+// this app lives.
 const BursaryDashboard = lazy(() => import('./components/BursaryDashboard'));
 const LiveClassroom = lazy(() => import('./components/LiveClassroom'));
 const AdmissionForm = lazy(() => import('./components/AdmissionForm'));
-const TeacherPortal = lazy(() => import('./components/TeacherPortal'));
+const SignUp = lazy(() => import('./components/SignUp'));
 
 export type ScholaCoreRole = 'student' | 'parent' | 'teacher' | 'bursar' | 'principal';
 
 export interface ScholaCoreUserRecord {
   name: string;
-  role: ScholaCoreRole;
+  // A brand new applicant lands in 'pending_teacher' after submitting their
+  // application (see SignUp.tsx) — not one of the five "real" operating
+  // roles, since they don't get dashboard access until a principal
+  // promotes them to 'teacher' after reviewing the AI screening result.
+  role: ScholaCoreRole | 'pending_teacher';
   studentId?: string;
   classId?: string;
   guardianTelegramId?: string;
@@ -35,13 +44,12 @@ const TelegramContext = createContext<TelegramContextValue>({
 
 export const useScholaCoreUser = () => useContext(TelegramContext);
 
-type Route = 'bursary' | 'classroom' | 'admissions' | 'teacher-portal';
+type Route = 'bursary' | 'classroom' | 'admissions';
 
 const NAV_ITEMS: { route: Route; label: string; roles: ScholaCoreRole[] }[] = [
   { route: 'bursary', label: 'Bursary', roles: ['student', 'parent', 'bursar', 'principal'] },
   { route: 'classroom', label: 'Classroom', roles: ['student', 'teacher', 'principal'] },
-  { route: 'admissions', label: 'Admissions', roles: ['parent', 'bursar', 'principal'] },
-  { route: 'teacher-portal', label: 'Recruitment', roles: ['teacher', 'principal'] }
+  { route: 'admissions', label: 'Admissions', roles: ['parent', 'bursar', 'principal'] }
 ];
 
 export default function App() {
@@ -57,6 +65,19 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * Trades Telegram-signed initData for a Firebase session. This is the
+   * ONLY place a Firebase custom token is minted — it always goes through
+   * /api/auth-telegram, which re-verifies initData's HMAC signature against
+   * the bot token server-side before issuing a token with a `role` claim.
+   * Without this step request.auth is null and firestore.rules refuses
+   * every read/write, so nothing below runs until this resolves.
+   *
+   * A successful sign-in with `user: null` in the response means a valid
+   * Telegram session but no ScholaCore account yet — that's a normal,
+   * expected state (not an error), handled by rendering <SignUp /> below,
+   * not the authError screen.
+   */
   async function bootstrapSession() {
     const rawInitData = getRawInitData();
     const tgUser = getTelegramUser();
@@ -67,6 +88,10 @@ export default function App() {
       return;
     }
 
+    // Catches malformed Vercel env vars instantly, with a specific
+    // on-screen message — no need to attempt a network round-trip (or find
+    // a way to open devtools on a phone inside Telegram) just to learn
+    // Firebase's config is broken.
     if (firebaseConfigError) {
       setAuthError(firebaseConfigError);
       setLoading(false);
@@ -125,12 +150,40 @@ export default function App() {
     );
   }
 
-  if (authError || !userRecord) {
+  if (authError) {
     return (
       <div className="flex h-screen items-center justify-center bg-core-50 p-6 text-center">
         <div>
           <h1 className="mb-2 text-xl font-semibold text-core-900">Couldn't sign you in</h1>
-          <p className="text-sm text-core-700">{authError ?? 'Please close and reopen the app from Telegram.'}</p>
+          <p className="text-sm text-core-700">{authError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!userRecord) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-screen items-center justify-center bg-core-50">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-core-200 border-t-seal-500" />
+          </div>
+        }
+      >
+        <SignUp onSignedUp={setUserRecord} />
+      </Suspense>
+    );
+  }
+
+  if (userRecord.role === 'pending_teacher') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-core-50 p-6 text-center">
+        <div>
+          <h1 className="mb-2 text-xl font-semibold text-core-900">Application under review</h1>
+          <p className="text-sm text-core-700">
+            Thanks, {userRecord.name.split(' ')[0]} — your teaching application is being reviewed by the principal's
+            office. You'll be contacted with next steps.
+          </p>
         </div>
       </div>
     );
@@ -147,8 +200,6 @@ export default function App() {
         return <LiveClassroom />;
       case 'admissions':
         return <AdmissionForm />;
-      case 'teacher-portal':
-        return <TeacherPortal />;
       default:
         return null;
     }

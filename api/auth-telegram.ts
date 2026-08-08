@@ -9,6 +9,15 @@ import { getAdminAuth, getAdminFirestore } from './_lib/firebaseAdmin';
 // mints that token, so without this endpoint the security rules would
 // reject all reads/writes. Every other component signs in through here
 // before touching Firestore (see src/App.tsx `bootstrapSession`).
+//
+// A user with no /users/{telegramId} record is no longer auto-provisioned
+// as 'student' — every person signs up explicitly (see api/signup.ts and
+// src/components/SignUp.tsx), including teachers, who sign up by going
+// through the AI-screened application. A brand new caller gets a token
+// with role 'unregistered' — enough to be a valid Firebase Auth session
+// (needed to call api/signup or submit a teacher application), but
+// firestore.rules grants an 'unregistered' role no access to anything
+// beyond what those two flows explicitly need.
 
 interface AuthRequestBody {
   initData: string;
@@ -45,50 +54,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const telegramId = String(verified.user.id);
 
   try {
-    // getAdminFirestore() used to be called outside this try/catch. If it
-    // threw (e.g. FIREBASE_SERVICE_ACCOUNT_KEY missing or malformed), the
-    // exception was never caught by this code at all — it crashed the
-    // whole function, and Vercel's platform returned its own generic
-    // "A server error has occurred" HTML page instead of JSON. The client
-    // then failed trying to JSON.parse() that page, which is what
-    // produced the "Unexpected token 'A'..." error on screen.
     const db = getAdminFirestore();
     const userRef = db.collection('users').doc(telegramId);
-
     const snap = await userRef.get();
-    const fallbackName = [verified.user.first_name, verified.user.last_name].filter(Boolean).join(' ');
 
-    let userRecord: {
-      name: string;
-      role: string;
-      studentId?: string;
-      classId?: string;
-      guardianTelegramId?: string;
-      unlockedLessons: Record<string, boolean>;
-    };
-
-    if (snap.exists) {
-      const data = snap.data()!;
-      userRecord = {
-        name: data.name ?? fallbackName,
-        role: data.role ?? 'student',
-        studentId: data.studentId,
-        classId: data.classId,
-        guardianTelegramId: data.guardianTelegramId,
-        unlockedLessons: data.unlockedLessons ?? {}
-      };
-    } else {
-      // First launch: provision a minimal student-role profile. Elevated
-      // roles (teacher/bursar/principal) are never self-assigned — a
-      // principal promotes a user out-of-band (Firebase console / an admin
-      // tool), which naturally takes effect next time this endpoint mints
-      // a fresh token for them.
-      userRecord = { name: fallbackName, role: 'student', unlockedLessons: {} };
-      await userRef.set({
-        ...userRecord,
-        createdAt: new Date().toISOString()
-      });
+    if (!snap.exists) {
+      // New Telegram user, no account yet. Mint a minimal-privilege token
+      // and tell the client to show sign-up — we do NOT create a Firestore
+      // record here anymore.
+      const customToken = await getAdminAuth().createCustomToken(telegramId, { role: 'unregistered' });
+      return res.status(200).json({ customToken, user: null });
     }
+
+    const data = snap.data()!;
+    const fallbackName = [verified.user.first_name, verified.user.last_name].filter(Boolean).join(' ');
+    const userRecord = {
+      name: data.name ?? fallbackName,
+      role: data.role ?? 'student',
+      studentId: data.studentId,
+      classId: data.classId,
+      guardianTelegramId: data.guardianTelegramId,
+      unlockedLessons: data.unlockedLessons ?? {}
+    };
 
     const customToken = await getAdminAuth().createCustomToken(telegramId, { role: userRecord.role });
 
@@ -98,11 +85,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     console.error('[auth-telegram] Failed to establish session', err);
-    // Surfacing the real message here (rather than a generic one) is
-    // deliberate — this endpoint's failures are almost always a
-    // deployment config problem (missing/malformed env var), and that's
-    // exactly what's needed on screen to actually fix it, with no way to
-    // read Vercel's function logs from inside Telegram's mobile WebView.
     const message = err instanceof Error ? err.message : 'Unable to establish session';
     return res.status(500).json({ error: message });
   }

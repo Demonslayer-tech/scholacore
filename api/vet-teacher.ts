@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getAdminFirestore } from './_lib/firebaseAdmin';
+import { getAdminAuth, getAdminFirestore } from './_lib/firebaseAdmin';
 import { verifyCaller } from './_lib/verifyCaller';
 
 interface VetTeacherBody {
@@ -57,6 +57,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Vetting service misconfigured' });
   }
 
+  // Previously `applicantId` came straight from the request body, meaning
+  // anyone could overwrite a DIFFERENT applicant's score/status just by
+  // sending their ID. It's now taken from the verified token instead.
   const caller = await verifyCaller(req);
   if (!caller) {
     return res.status(401).json({ error: 'Not signed in' });
@@ -76,6 +79,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .join('\n\n');
 
   try {
+    // Groq's Structured Outputs (json_schema + strict: true) uses
+    // constrained decoding, so the response is guaranteed to match this
+    // schema exactly — same reliability guarantee the Gemini version had
+    // via responseSchema, no retry/re-parse logic needed. Using
+    // openai/gpt-oss-120b (the larger of Groq's two general-purpose
+    // models) here rather than the -20b used in ai-tutor.ts, since this
+    // task is a judgment call on a real hiring decision and is worth the
+    // extra quality — it's not a latency-sensitive live chat.
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -135,6 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(502).json({ error: 'Vetting AI returned malformed output' });
     }
 
+    // Clamp defensively even under strict schema mode — cheap insurance.
     result.score = Math.max(0, Math.min(100, Math.round(result.score)));
 
     const db = getAdminFirestore();
@@ -144,7 +156,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: result.recommendation
     });
 
-    return res.status(200).json(result);
+    // Teacher sign-up works differently from student/parent: submitting
+    // this application IS the sign-up action, gated on AI screening rather
+    // than granting access immediately. Only create the account if one
+    // doesn't already exist — an existing student/parent/teacher/etc.
+    // hitting this endpoint should never have their role silently
+    // overwritten to pending_teacher.
+    const userRef = db.collection('users').doc(applicantId);
+    const existingUser = await userRef.get();
+
+    let customToken: string | undefined;
+    if (!existingUser.exists) {
+      await userRef.set({
+        name: fullName,
+        role: 'pending_teacher',
+        unlockedLessons: {},
+        createdAt: new Date().toISOString()
+      });
+      // Their current token still says role: 'unregistered' — mint a fresh
+      // one so the client can move past the sign-up screen without a full
+      // app restart.
+      customToken = await getAdminAuth().createCustomToken(applicantId, { role: 'pending_teacher' });
+    }
+
+    return res.status(200).json({ ...result, customToken });
   } catch (err) {
     console.error('[vet-teacher] Groq request failed', err);
     return res.status(500).json({ error: 'Unable to complete AI vetting right now' });
