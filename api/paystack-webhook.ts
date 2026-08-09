@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import crypto from 'crypto';
 import { getAdminFirestore } from './_lib/firebaseAdmin';
+import { getEnv } from './_lib/env';
 
 // Vercel parses JSON bodies by default, but HMAC verification requires the
 // exact raw bytes Paystack signed — a re-serialized JSON.stringify(req.body)
@@ -44,7 +45,7 @@ async function sendTelegramReceipt(chatId: string, params: {
   lessonId: string | null;
   paidAt: string;
 }) {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const botToken = getEnv('TELEGRAM_BOT_TOKEN');
   if (!botToken) {
     console.error('[paystack-webhook] Missing TELEGRAM_BOT_TOKEN, skipping receipt');
     return;
@@ -83,7 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const secretKey = process.env.PAYSTACK_SECRET_KEY;
+  const secretKey = getEnv('PAYSTACK_SECRET_KEY');
   if (!secretKey) {
     console.error('[paystack-webhook] Missing PAYSTACK_SECRET_KEY');
     return res.status(500).json({ error: 'Webhook misconfigured' });
@@ -134,15 +135,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const transactionRef = db.collection('transactions').doc(reference);
 
   try {
-    // Idempotency: Paystack may redeliver the same event. If we've already
-    // recorded this reference, skip the write side-effects (Firestore
-    // update + Telegram message) but still acknowledge with 200.
-    const existing = await transactionRef.get();
-    if (existing.exists) {
-      return res.status(200).json({ received: true, duplicate: true });
-    }
-
+    // Idempotency: Paystack may redeliver the same event, and can even
+    // redeliver it twice in close succession. The existence check now runs
+    // INSIDE the transaction (tx.get, not a plain .get() beforehand) so
+    // Firestore's transaction isolation actually prevents two concurrent
+    // deliveries from both passing the check and double-processing a
+    // single payment (duplicate lesson unlock + duplicate Telegram
+    // receipt).
+    let alreadyProcessed = false;
     await db.runTransaction(async (tx) => {
+      const existing = await tx.get(transactionRef);
+      if (existing.exists) {
+        alreadyProcessed = true;
+        return;
+      }
+
       tx.set(transactionRef, {
         amount: amountNaira,
         studentId,
@@ -158,6 +165,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
     });
+
+    if (alreadyProcessed) {
+      return res.status(200).json({ received: true, duplicate: true });
+    }
 
     await sendTelegramReceipt(telegramChatId, {
       amountNaira,

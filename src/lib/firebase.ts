@@ -2,13 +2,25 @@ import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, signInWithCustomToken, type Auth } from 'firebase/auth';
 
+// .trim() on every value here is deliberate: the uploaded env.env showed
+// nearly every var written as `KEY= value` (space right after `=`), which
+// makes a leading space part of the value. If Vercel's env vars were ever
+// set the same way, that stray space is exactly what makes Firebase Auth's
+// SDK build a malformed URL on Safari/WebKit (Telegram-iOS's in-app
+// browser) — surfacing as the generic "The string did not match the
+// expected pattern" error. Trimming here means it can never happen again,
+// no matter how the value is stored in Vercel.
+function trimEnv(value: string | undefined): string | undefined {
+  return typeof value === 'string' ? value.trim() : value;
+}
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: trimEnv(import.meta.env.VITE_FIREBASE_API_KEY),
+  authDomain: trimEnv(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
+  projectId: trimEnv(import.meta.env.VITE_FIREBASE_PROJECT_ID),
+  storageBucket: trimEnv(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
+  messagingSenderId: trimEnv(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+  appId: trimEnv(import.meta.env.VITE_FIREBASE_APP_ID)
 };
 
 type FirebaseConfigKey = keyof typeof firebaseConfig;
@@ -29,9 +41,6 @@ const FIELD_LABELS: Record<FirebaseConfigKey, string> = {
 function findGenericProblem(key: FirebaseConfigKey, value: string): string | null {
   const label = FIELD_LABELS[key];
 
-  if (/^\s|\s$/.test(value)) {
-    return `${label} has a leading or trailing space/newline. Re-paste it in Vercel, then redeploy.`;
-  }
   if (/["']/.test(value)) {
     return `${label} has quote marks in it. Vercel doesn't need quotes around values — remove them, then redeploy.`;
   }

@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyTelegramInitData } from './_lib/telegramAuth';
 import { getAdminAuth, getAdminFirestore } from './_lib/firebaseAdmin';
+import { getEnv } from './_lib/env';
 
 // This endpoint is the bridge between "Telegram says this is user X" and
 // "Firestore/firestore.rules trust this is user X". It is not in the
@@ -33,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const botToken = getEnv('TELEGRAM_BOT_TOKEN');
   if (!botToken) {
     console.error('[auth-telegram] Missing TELEGRAM_BOT_TOKEN');
     return res.status(500).json({ error: 'Auth service misconfigured' });

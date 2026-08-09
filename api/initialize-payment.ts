@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyCaller } from './_lib/verifyCaller';
 import { getAdminFirestore } from './_lib/firebaseAdmin';
+import { getEnv } from './_lib/env';
 
 const MICRO_FEE_THRESHOLD_NAIRA = 2500;
 
@@ -37,10 +38,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const secretKey = process.env.PAYSTACK_SECRET_KEY;
+  const secretKey = getEnv('PAYSTACK_SECRET_KEY');
   if (!secretKey) {
     console.error('[initialize-payment] Missing PAYSTACK_SECRET_KEY');
     return res.status(500).json({ error: 'Payment service misconfigured' });
+  }
+
+  // Previously unchecked: if this is empty, Paystack silently gets sent
+  // an empty/undefined callback_url and a student has nowhere to land
+  // after paying. Fail fast here instead, with a message that names the
+  // exact var to fix in Vercel.
+  const callbackUrl = getEnv('PAYSTACK_CALLBACK_URL');
+  if (!callbackUrl) {
+    console.error('[initialize-payment] Missing PAYSTACK_CALLBACK_URL');
+    return res.status(500).json({ error: 'Payment service misconfigured: PAYSTACK_CALLBACK_URL is not set in Vercel.' });
   }
 
   const caller = await verifyCaller(req);
@@ -128,7 +139,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             { display_name: 'Lesson ID', variable_name: 'lesson_id', value: lessonId ?? 'N/A' }
           ]
         },
-        callback_url: process.env.PAYSTACK_CALLBACK_URL
+        callback_url: callbackUrl
       })
     });
 

@@ -23,6 +23,14 @@ function isValidBody(body: unknown): body is SignupBody {
   );
 }
 
+function isAlreadyExistsError(err: unknown): boolean {
+  const e = err as { code?: number | string; message?: string } | undefined;
+  if (!e) return false;
+  // Admin SDK / gRPC ALREADY_EXISTS is numeric code 6; some paths surface
+  // it as a string code or just in the message, so check all three.
+  return e.code === 6 || e.code === 'already-exists' || (typeof e.message === 'string' && /already exists/i.test(e.message));
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -49,17 +57,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const db = getAdminFirestore();
     const userRef = db.collection('users').doc(telegramId);
 
-    const existing = await userRef.get();
-    if (existing.exists) {
-      // Already signed up — don't let a repeat call silently change role.
-      return res.status(409).json({ error: 'This account is already signed up.' });
-    }
-
     const userRecord = { name: name.trim(), role, unlockedLessons: {} };
-    await userRef.set({
-      ...userRecord,
-      createdAt: new Date().toISOString()
-    });
+
+    try {
+      // .create() is atomic and fails if the document already exists —
+      // this closes a race where two near-simultaneous signup calls (e.g.
+      // a double-tap) could both pass a separate "does it exist" check and
+      // both write, with the second silently overwriting the first's role.
+      await userRef.create({
+        ...userRecord,
+        createdAt: new Date().toISOString()
+      });
+    } catch (err) {
+      if (isAlreadyExistsError(err)) {
+        return res.status(409).json({ error: 'This account is already signed up.' });
+      }
+      throw err;
+    }
 
     // The caller's existing token still says role: 'unregistered' — mint a
     // fresh one reflecting their real role so firestore.rules recognizes

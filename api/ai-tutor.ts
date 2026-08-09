@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyCaller } from './_lib/verifyCaller';
+import { getEnv } from './_lib/env';
 
 interface AiTutorBody {
   studentQuestion: string;
@@ -43,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = getEnv('GROQ_API_KEY');
   if (!apiKey) {
     console.error('[ai-tutor] Missing GROQ_API_KEY');
     return res.status(500).json({ error: 'AI tutor service misconfigured' });

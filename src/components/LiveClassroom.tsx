@@ -4,7 +4,7 @@ import '@livekit/components-styles';
 import { useScholaCoreUser } from '../App';
 import { getAuthToken } from '../lib/firebase';
 
-const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL as string;
+const LIVEKIT_URL = (import.meta.env.VITE_LIVEKIT_URL as string | undefined)?.trim() as string;
 
 interface ClassroomSession {
   token: string;

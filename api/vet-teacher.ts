@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getAdminAuth, getAdminFirestore } from './_lib/firebaseAdmin';
 import { verifyCaller } from './_lib/verifyCaller';
+import { getEnv } from './_lib/env';
 
 interface VetTeacherBody {
   fullName: string;
@@ -51,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = getEnv('GROQ_API_KEY');
   if (!apiKey) {
     console.error('[vet-teacher] Missing GROQ_API_KEY');
     return res.status(500).json({ error: 'Vetting service misconfigured' });
@@ -150,11 +151,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     result.score = Math.max(0, Math.min(100, Math.round(result.score)));
 
     const db = getAdminFirestore();
-    await db.collection('teacherApplications').doc(applicantId).update({
-      aiScore: result.score,
-      aiSummary: result.summary,
-      status: result.recommendation
-    });
+    // Previously `.update()`, which throws if this document doesn't exist
+    // yet. In practice it only worked because the client (SignUp.tsx)
+    // happens to create it first — a silent ordering dependency that broke
+    // this endpoint (with a 500, despite the AI screening having already
+    // succeeded) the moment that assumption didn't hold. `.set(..., {
+    // merge: true })` writes these fields whether or not the document
+    // exists yet.
+    await db.collection('teacherApplications').doc(applicantId).set(
+      {
+        aiScore: result.score,
+        aiSummary: result.summary,
+        status: result.recommendation
+      },
+      { merge: true }
+    );
 
     // Teacher sign-up works differently from student/parent: submitting
     // this application IS the sign-up action, gated on AI screening rather

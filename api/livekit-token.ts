@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { AccessToken } from 'livekit-server-sdk';
 import { verifyCaller } from './_lib/verifyCaller';
 import { getAdminFirestore } from './_lib/firebaseAdmin';
+import { getEnv } from './_lib/env';
 
 interface TokenRequestBody {
   classId: string;
@@ -19,8 +20,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.LIVEKIT_API_KEY;
-  const apiSecret = process.env.LIVEKIT_API_SECRET;
+  const apiKey = getEnv('LIVEKIT_API_KEY');
+  const apiSecret = getEnv('LIVEKIT_API_SECRET');
   if (!apiKey || !apiSecret) {
     console.error('[livekit-token] Missing LIVEKIT_API_KEY/LIVEKIT_API_SECRET');
     return res.status(500).json({ error: 'Live classroom service misconfigured' });

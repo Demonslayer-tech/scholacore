@@ -15,7 +15,11 @@ export async function verifyCaller(req: VercelRequest): Promise<VerifiedCaller |
 
   try {
     const decoded = await getAdminAuth().verifyIdToken(idToken);
-    return { telegramId: decoded.uid, role: typeof decoded.role === 'string' ? decoded.role : 'student' };
+    // Fail closed: if a verified token is ever missing its role claim,
+    // default to the same least-privilege role brand-new users get
+    // ('unregistered'), not 'student'. A real role should only ever come
+    // from an explicit claim minted by our own signup/auth endpoints.
+    return { telegramId: decoded.uid, role: typeof decoded.role === 'string' ? decoded.role : 'unregistered' };
   } catch (err) {
     console.warn('[verifyCaller] Token verification failed:', err instanceof Error ? err.message : err);
     return null;
