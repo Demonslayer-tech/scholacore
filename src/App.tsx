@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, Suspense, lazy } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { db, signInWithTelegramToken, firebaseConfigError } from './lib/firebase';
+import { db, signInWithTelegramToken, firebaseConfigError, firebaseInitError } from './lib/firebase';
 import { initTelegramApp, getTelegramUser, getRawInitData, type ScholaCoreTelegramUser } from './lib/telegram';
 
 // Lazy-loaded: LiveClassroom pulls in the full LiveKit client SDK and
@@ -92,8 +92,8 @@ export default function App() {
     // on-screen message — no need to attempt a network round-trip (or find
     // a way to open devtools on a phone inside Telegram) just to learn
     // Firebase's config is broken.
-    if (firebaseConfigError) {
-      setAuthError(firebaseConfigError);
+    if (firebaseConfigError || firebaseInitError) {
+      setAuthError(firebaseConfigError ?? firebaseInitError);
       setLoading(false);
       return;
     }
