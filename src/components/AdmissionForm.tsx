@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useScholaCoreUser } from '../App';
@@ -7,9 +7,6 @@ import { hapticError, hapticSuccess } from '../lib/telegram';
 const CLASS_OPTIONS = ['JSS1', 'JSS2', 'JSS3', 'SSS1', 'SSS2', 'SSS3'] as const;
 type ClassOption = (typeof CLASS_OPTIONS)[number];
 
-// Illustrative placement bank. In production this should live in Firestore
-// (keyed by targetClass) so the principal's office can revise questions
-// without a redeploy — hardcoded here to keep this component self-contained.
 interface PlacementQuestion {
   id: string;
   prompt: string;
@@ -40,7 +37,7 @@ const TEST_DURATION_SECONDS = 300;
 type Step = 'details' | 'test' | 'submitted';
 
 export default function AdmissionForm() {
-  const { telegramUser } = useScholaCoreUser();
+  const { uid } = useScholaCoreUser();
   const [step, setStep] = useState<Step>('details');
 
   const [studentFullName, setStudentFullName] = useState('');
@@ -61,8 +58,8 @@ export default function AdmissionForm() {
     /^\+?[0-9\s-]{7,15}$/.test(parentPhone.trim()) &&
     /\S+@\S+\.\S+/.test(parentEmail.trim());
 
-  const handleSubmitTest = React.useCallback(async () => {
-    if (!telegramUser || submitting) return;
+  const handleSubmitTest = useCallback(async () => {
+    if (!uid || submitting) return;
     setSubmitting(true);
     setErrorMessage(null);
 
@@ -77,7 +74,7 @@ export default function AdmissionForm() {
         studentFullName: studentFullName.trim(),
         targetClass,
         parentContact: {
-          telegramId: telegramUser.telegramId,
+          uid,
           name: parentName.trim(),
           phone: parentPhone.trim(),
           email: parentEmail.trim()
@@ -95,10 +92,8 @@ export default function AdmissionForm() {
       setErrorMessage(err instanceof Error ? err.message : 'Could not submit application');
       setSubmitting(false);
     }
-  }, [answers, parentEmail, parentName, parentPhone, studentFullName, targetClass, telegramUser, submitting]);
+  }, [answers, parentEmail, parentName, parentPhone, studentFullName, targetClass, uid, submitting]);
 
-  // Countdown timer for the placement test. Auto-submits at zero so a
-  // student can't stall indefinitely once the test has started.
   useEffect(() => {
     if (step !== 'test') return;
     if (secondsLeft <= 0) {
@@ -118,11 +113,11 @@ export default function AdmissionForm() {
   if (step === 'submitted') {
     return (
       <div className="rounded-card border border-core-100 bg-white p-6 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-seal-600">Application received</p>
-        <h2 className="mt-2 font-display text-xl text-core-900">Thank you, {parentName.split(' ')[0]}</h2>
-        <p className="mt-2 text-sm text-core-700">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-brand-600">Application received</p>
+        <h2 className="mt-2 text-xl font-bold text-core-950">Thank you, {parentName.split(' ')[0]}</h2>
+        <p className="mt-2 text-sm text-core-600">
           {studentFullName}'s placement score was <span className="font-semibold">{placementScore}/100</span>. The
-          bursary office will review the application and follow up with a fee schedule for {targetClass}.
+          bursary team will review the application and follow up with subscription details for {targetClass}.
         </p>
       </div>
     );
@@ -132,15 +127,15 @@ export default function AdmissionForm() {
     const answeredCount = Object.keys(answers).length;
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between rounded-card bg-core-900 px-4 py-3 text-white">
+        <div className="flex items-center justify-between rounded-card bg-core-950 px-4 py-3 text-white">
           <span className="text-sm">Placement test — {targetClass}</span>
-          <span className="font-mono text-sm text-seal-400">{timeLabel}</span>
+          <span className="font-mono text-sm text-brand-400">{timeLabel}</span>
         </div>
 
         <div className="space-y-4">
           {PLACEMENT_QUESTIONS.map((q, idx) => (
             <div key={q.id} className="rounded-card border border-core-100 bg-white p-4">
-              <p className="mb-3 text-sm font-medium text-core-900">
+              <p className="mb-3 text-sm font-medium text-core-950">
                 {idx + 1}. {q.prompt}
               </p>
               <div className="space-y-2">
@@ -149,14 +144,14 @@ export default function AdmissionForm() {
                     key={opt}
                     className={`flex cursor-pointer items-center gap-2 rounded-card border px-3 py-2 text-sm transition-colors ${
                       answers[q.id] === optIdx
-                        ? 'border-seal-500 bg-seal-500/10 text-core-900'
-                        : 'border-core-100 text-core-700 hover:bg-core-50'
+                        ? 'border-brand-500 bg-brand-50 text-core-950'
+                        : 'border-core-100 text-core-600 hover:bg-core-50'
                     }`}
                   >
                     <input
                       type="radio"
                       name={q.id}
-                      className="accent-seal-500"
+                      className="accent-brand-500"
                       checked={answers[q.id] === optIdx}
                       onChange={() => setAnswers((prev) => ({ ...prev, [q.id]: optIdx }))}
                     />
@@ -171,7 +166,7 @@ export default function AdmissionForm() {
         <button
           onClick={handleSubmitTest}
           disabled={submitting || answeredCount < PLACEMENT_QUESTIONS.length}
-          className="w-full rounded-card bg-core-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+          className="w-full rounded-card bg-core-950 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
         >
           {submitting
             ? 'Submitting…'
@@ -187,27 +182,27 @@ export default function AdmissionForm() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="font-display text-xl text-core-900">Admissions</h2>
+        <h2 className="text-xl font-bold text-core-950">Admissions</h2>
         <p className="text-sm text-core-600">Register a student for the upcoming term.</p>
       </div>
 
       <div className="space-y-3 rounded-card border border-core-100 bg-white p-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-core-700">Student's full name</label>
+          <label className="mb-1 block text-xs font-medium text-core-600">Student's full name</label>
           <input
             value={studentFullName}
             onChange={(e) => setStudentFullName(e.target.value)}
-            className="w-full rounded-card border border-core-100 px-3 py-2 text-sm focus:border-seal-500"
+            className="w-full rounded-card border border-core-200 px-3 py-2 text-sm focus:border-brand-500"
             placeholder="e.g. Amara Chukwu"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-core-700">Target class</label>
+          <label className="mb-1 block text-xs font-medium text-core-600">Target class</label>
           <select
             value={targetClass}
             onChange={(e) => setTargetClass(e.target.value as ClassOption)}
-            className="w-full rounded-card border border-core-100 px-3 py-2 text-sm focus:border-seal-500"
+            className="w-full rounded-card border border-core-200 px-3 py-2 text-sm focus:border-brand-500"
           >
             {CLASS_OPTIONS.map((c) => (
               <option key={c} value={c}>
@@ -218,32 +213,32 @@ export default function AdmissionForm() {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-core-700">Parent / guardian name</label>
+          <label className="mb-1 block text-xs font-medium text-core-600">Parent / guardian name</label>
           <input
             value={parentName}
             onChange={(e) => setParentName(e.target.value)}
-            className="w-full rounded-card border border-core-100 px-3 py-2 text-sm focus:border-seal-500"
+            className="w-full rounded-card border border-core-200 px-3 py-2 text-sm focus:border-brand-500"
             placeholder="e.g. Mrs. Ifeoma Chukwu"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-core-700">Parent phone</label>
+          <label className="mb-1 block text-xs font-medium text-core-600">Parent phone</label>
           <input
             value={parentPhone}
             onChange={(e) => setParentPhone(e.target.value)}
-            className="w-full rounded-card border border-core-100 px-3 py-2 text-sm focus:border-seal-500"
+            className="w-full rounded-card border border-core-200 px-3 py-2 text-sm focus:border-brand-500"
             placeholder="e.g. 08012345678"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-core-700">Parent email</label>
+          <label className="mb-1 block text-xs font-medium text-core-600">Parent email</label>
           <input
             type="email"
             value={parentEmail}
             onChange={(e) => setParentEmail(e.target.value)}
-            className="w-full rounded-card border border-core-100 px-3 py-2 text-sm focus:border-seal-500"
+            className="w-full rounded-card border border-core-200 px-3 py-2 text-sm focus:border-brand-500"
             placeholder="e.g. ifeoma@email.com"
           />
         </div>
@@ -252,7 +247,7 @@ export default function AdmissionForm() {
       <button
         onClick={() => setStep('test')}
         disabled={!detailsValid}
-        className="w-full rounded-card bg-seal-500 px-4 py-3 text-sm font-semibold text-core-950 disabled:opacity-40"
+        className="w-full rounded-card bg-brand-500 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
       >
         Continue to placement test
       </button>

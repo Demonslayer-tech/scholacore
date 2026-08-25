@@ -1,24 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyTelegramInitData } from './_lib/telegramAuth';
 import { getAdminAuth, getAdminFirestore } from './_lib/firebaseAdmin';
-import { getEnv } from './_lib/env';
 
-// This endpoint is the bridge between "Telegram says this is user X" and
-// "Firestore/firestore.rules trust this is user X". It is not in the
-// original 5-endpoint spec, but firestore.rules reads
-// request.auth.token.role on every request — nothing else in this codebase
-// mints that token, so without this endpoint the security rules would
-// reject all reads/writes. Every other component signs in through here
-// before touching Firestore (see src/App.tsx `bootstrapSession`).
+// Bridges "Telegram says this is user X" to "Firestore trusts this is user
+// X". firestore.rules reads request.auth.token.role on every request —
+// nothing else mints that token, so without this endpoint the rules
+// reject all reads/writes.
 //
-// A user with no /users/{telegramId} record is no longer auto-provisioned
-// as 'student' — every person signs up explicitly (see api/signup.ts and
-// src/components/SignUp.tsx), including teachers, who sign up by going
-// through the AI-screened application. A brand new caller gets a token
-// with role 'unregistered' — enough to be a valid Firebase Auth session
-// (needed to call api/signup or submit a teacher application), but
-// firestore.rules grants an 'unregistered' role no access to anything
-// beyond what those two flows explicitly need.
+// Nobody is auto-provisioned an account here. A user with no
+// /users/{uid} record gets a token with role 'unregistered' and
+// user: null in the response — App.tsx shows sign-up in that state.
 
 interface AuthRequestBody {
   initData: string;
@@ -34,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const botToken = getEnv('TELEGRAM_BOT_TOKEN');
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) {
     console.error('[auth-telegram] Missing TELEGRAM_BOT_TOKEN');
     return res.status(500).json({ error: 'Auth service misconfigured' });
@@ -60,9 +51,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const snap = await userRef.get();
 
     if (!snap.exists) {
-      // New Telegram user, no account yet. Mint a minimal-privilege token
-      // and tell the client to show sign-up — we do NOT create a Firestore
-      // record here anymore.
       const customToken = await getAdminAuth().createCustomToken(telegramId, { role: 'unregistered' });
       return res.status(200).json({ customToken, user: null });
     }
@@ -74,7 +62,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       role: data.role ?? 'student',
       studentId: data.studentId,
       classId: data.classId,
-      guardianTelegramId: data.guardianTelegramId,
+      guardianUid: data.guardianUid,
+      subscriptionActive: data.subscriptionActive ?? false,
       unlockedLessons: data.unlockedLessons ?? {}
     };
 
@@ -82,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       customToken,
-      user: { telegramId, ...userRecord }
+      user: { uid: telegramId, ...userRecord }
     });
   } catch (err) {
     console.error('[auth-telegram] Failed to establish session', err);

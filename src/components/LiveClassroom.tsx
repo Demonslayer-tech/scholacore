@@ -4,7 +4,7 @@ import '@livekit/components-styles';
 import { useScholaCoreUser } from '../App';
 import { getAuthToken } from '../lib/firebase';
 
-const LIVEKIT_URL = (import.meta.env.VITE_LIVEKIT_URL as string | undefined)?.trim() as string;
+const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL as string;
 
 interface ClassroomSession {
   token: string;
@@ -13,7 +13,7 @@ interface ClassroomSession {
 }
 
 export default function LiveClassroom() {
-  const { telegramUser, userRecord } = useScholaCoreUser();
+  const { uid, userRecord } = useScholaCoreUser();
   const [session, setSession] = useState<ClassroomSession | null>(null);
   const [status, setStatus] = useState<'idle' | 'connecting' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -21,29 +21,21 @@ export default function LiveClassroom() {
   const classId = userRecord?.classId;
 
   const joinClass = async () => {
-    if (!telegramUser || !classId) return;
+    if (!uid || !classId) return;
     setStatus('connecting');
     setErrorMessage(null);
 
     try {
       const token = await getAuthToken();
-      if (!token) {
-        throw new Error('Your session expired — please close and reopen the app.');
-      }
+      if (!token) throw new Error('Your session expired — please refresh and sign in again.');
 
       const res = await fetch('/api/livekit-token', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ classId })
       });
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Could not join classroom');
-      }
+      if (!res.ok) throw new Error(data.error || 'Could not join classroom');
 
       setSession(data);
       setStatus('idle');
@@ -56,7 +48,7 @@ export default function LiveClassroom() {
   if (!classId) {
     return (
       <div className="rounded-card border border-core-100 bg-white p-4">
-        <p className="text-sm text-core-700">
+        <p className="text-sm text-core-600">
           You're not yet assigned to a class. This unlocks once admissions confirms your placement.
         </p>
       </div>
@@ -67,14 +59,14 @@ export default function LiveClassroom() {
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-card border border-core-100 bg-white p-8 text-center">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-core-500">Live classroom</p>
-          <h2 className="mt-1 font-display text-lg text-core-900">Class {classId}</h2>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-core-400">Live classroom</p>
+          <h2 className="mt-1 text-lg font-bold text-core-950">Class {classId}</h2>
         </div>
         <p className="text-sm text-core-600">Join when your teacher starts the session.</p>
         <button
           onClick={joinClass}
           disabled={status === 'connecting'}
-          className="rounded-card bg-core-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          className="rounded-card bg-core-950 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
         >
           {status === 'connecting' ? 'Connecting…' : 'Join class'}
         </button>

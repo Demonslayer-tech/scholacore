@@ -4,21 +4,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ScholaCore brand — deep academic navy + a single warm "gold seal" accent,
-        // kept restrained so it reads as an institution, not a startup.
         core: {
-          950: '#0A1628',
-          900: '#0F1F38',
-          800: '#16304F',
-          700: '#1F4066',
-          600: '#2C5A8C',
-          100: '#E8EEF5',
-          50: '#F5F8FC'
+          50: '#F6F6F6',
+          100: '#EBEBEB',
+          200: '#D8D8D8',
+          400: '#9A9A9A',
+          600: '#525252',
+          800: '#262626',
+          900: '#141414',
+          950: '#000000'
         },
-        seal: {
-          600: '#B8860B',
-          500: '#D4A017',
-          400: '#E6BC4A'
+        brand: {
+          50: '#E6F0EF',
+          100: '#CCE1DF',
+          400: '#0A8983',
+          500: '#025F5B',
+          600: '#014B47',
+          700: '#013634'
         },
         signal: {
           success: '#1E8F5F',
@@ -27,12 +29,11 @@ export default {
         }
       },
       fontFamily: {
-        display: ['"Fraunces"', 'serif'],
         sans: ['"Inter"', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace']
       },
       borderRadius: {
-        card: '10px'
+        card: '12px'
       }
     }
   },

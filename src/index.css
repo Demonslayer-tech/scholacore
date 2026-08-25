@@ -7,14 +7,11 @@
     height: 100%;
   }
   body {
-    @apply font-sans text-core-900 antialiased;
-    background: var(--tg-theme-bg-color, #F5F8FC);
-  }
-  h1, h2, h3 {
-    @apply font-display;
+    @apply font-sans text-core-950 antialiased;
+    background: #F6F6F6;
   }
   :focus-visible {
-    outline: 2px solid theme('colors.seal.500');
+    outline: 2px solid theme('colors.brand.500');
     outline-offset: 2px;
   }
 }

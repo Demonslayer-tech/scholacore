@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { AccessToken } from 'livekit-server-sdk';
 import { verifyCaller } from './_lib/verifyCaller';
 import { getAdminFirestore } from './_lib/firebaseAdmin';
-import { getEnv } from './_lib/env';
 
 interface TokenRequestBody {
   classId: string;
@@ -10,8 +9,7 @@ interface TokenRequestBody {
 
 function isValidBody(body: unknown): body is TokenRequestBody {
   if (!body || typeof body !== 'object') return false;
-  const b = body as Record<string, unknown>;
-  return typeof b.classId === 'string';
+  return typeof (body as Record<string, unknown>).classId === 'string';
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -20,8 +18,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = getEnv('LIVEKIT_API_KEY');
-  const apiSecret = getEnv('LIVEKIT_API_SECRET');
+  const apiKey = process.env.LIVEKIT_API_KEY;
+  const apiSecret = process.env.LIVEKIT_API_SECRET;
   if (!apiKey || !apiSecret) {
     console.error('[livekit-token] Missing LIVEKIT_API_KEY/LIVEKIT_API_SECRET');
     return res.status(500).json({ error: 'Live classroom service misconfigured' });
@@ -40,38 +38,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const db = getAdminFirestore();
-    const userSnap = await db.collection('users').doc(caller.telegramId).get();
+    const userSnap = await db.collection('users').doc(caller.uid).get();
 
     if (!userSnap.exists) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const userData = userSnap.data()!;
-    const isTeacher = userData.role === 'teacher' || userData.role === 'principal';
+    const canBroadcast = userData.role === 'teacher' || userData.role === 'developer';
 
-    if (!isTeacher && userData.classId !== classId) {
+    if (!canBroadcast && userData.classId !== classId) {
       return res.status(403).json({ error: 'Not enrolled in this class' });
     }
 
     const roomName = `class-${classId}`;
 
     const token = new AccessToken(apiKey, apiSecret, {
-      identity: caller.telegramId,
-      name: userData.name ?? caller.telegramId,
+      identity: caller.uid,
+      name: userData.name ?? caller.uid,
       ttl: '15m'
     });
 
     token.addGrant({
       room: roomName,
       roomJoin: true,
-      canPublish: isTeacher,
+      canPublish: canBroadcast,
       canPublishData: true,
       canSubscribe: true
     });
 
     const jwt = await token.toJwt();
 
-    return res.status(200).json({ token: jwt, room: roomName, canPublish: isTeacher });
+    return res.status(200).json({ token: jwt, room: roomName, canPublish: canBroadcast });
   } catch (err) {
     console.error('[livekit-token] Failed to issue token', err);
     return res.status(500).json({ error: 'Unable to issue classroom token' });

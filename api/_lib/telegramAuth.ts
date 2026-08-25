@@ -25,11 +25,6 @@ const MAX_INIT_DATA_AGE_SECONDS = 24 * 60 * 60;
  *      joined as "key=value" with "\n"
  *   3. computed_hash = HMAC_SHA256(key=secret_key, data=data_check_string)
  *   4. computed_hash must equal the `hash` field (constant-time compare)
- *
- * This MUST run server-side with the real bot token — it's the only thing
- * standing between "anyone can claim to be any Telegram user" and a real
- * identity check. Never trust a parsed `user` object from the client without
- * having verified the raw initData string it came from.
  */
 export function verifyTelegramInitData(initData: string, botToken: string): VerifiedTelegramInitData {
   const params = new URLSearchParams(initData);

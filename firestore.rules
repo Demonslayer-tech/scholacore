@@ -1,21 +1,23 @@
 rules_version = '2';
 
-// ScholaCore Systems — Firestore RBAC
+// ScholaCore — Firestore RBAC
 //
-// Roles: student, parent, teacher, bursar, principal
+// Roles: developer, teacher, student, parent, bursary
+// Interim states (not "real" roles, granted almost no access):
+//   unregistered   — signed in (Telegram or web), no /users/{uid} record yet
+//   pending_teacher — applied to teach, awaiting a developer's review
 //
-// Identity model: Firebase Auth users are signed in via a custom token minted
-// server-side (api/*.ts, using firebase-admin) from the verified Telegram
-// initData. The custom token's uid == the user's Telegram ID (string), and a
-// custom claim `role` is attached at mint time. We trust request.auth.token.role
-// rather than re-reading /users/{uid} on every rule (cheaper, avoids rule
-// recursion), but role changes require re-minting the token, which the auth
-// endpoint does whenever a user's Firestore role document changes.
+// Identity: Firebase Auth uid is either a Telegram numeric ID (Telegram
+// launch path, see api/auth-telegram.ts) or Firebase's own generated uid
+// (web email/password path, see api/auth-web.ts) — rules don't care which,
+// they just compare request.auth.uid against document IDs/fields.
+// request.auth.token.role is a custom claim set at token-mint time; role
+// changes require re-minting, which every auth/signup endpoint does
+// whenever a /users/{uid} role changes.
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ---- helpers ----
     function isSignedIn() {
       return request.auth != null;
     }
@@ -37,101 +39,101 @@ service cloud.firestore {
     }
 
     function isStaff() {
-      // Teachers, bursars, and principals all count as internal staff for
-      // read access to operational collections.
-      return hasAnyRole(['teacher', 'bursar', 'principal']);
+      return hasAnyRole(['teacher', 'bursary', 'developer']);
     }
 
-    function isSelf(telegramId) {
-      return isSignedIn() && uid() == telegramId;
+    function isSelf(id) {
+      return isSignedIn() && uid() == id;
     }
 
     function isGuardianOf(userDoc) {
       return isSignedIn() &&
         role() == 'parent' &&
-        userDoc.data.guardianTelegramId == uid();
+        userDoc.data.guardianUid == uid();
     }
 
     // ---------------------------------------------------------------------
-    // /users/{telegramId}
-    // Profile + role + unlockedLessons map. Students/parents can read their
-    // own linked record; staff can read broadly for admin purposes. Writes
-    // to `role` and `unlockedLessons` are staff/webhook-only — a student must
-    // never be able to grant themselves a paid lesson or promote their role.
+    // /users/{uid}
     // ---------------------------------------------------------------------
-    match /users/{telegramId} {
-      allow read: if isSelf(telegramId) || isGuardianOf(resource) || isStaff();
+    match /users/{id} {
+      allow read: if isSelf(id) || isGuardianOf(resource) || isStaff();
 
-      allow create: if isSelf(telegramId) &&
-        request.resource.data.role in ['student', 'parent'] &&
-        request.resource.data.unlockedLessons == null;
+      allow create: if isSelf(id) &&
+        request.resource.data.role in ['student', 'parent'];
 
-      // A student/parent may only touch their own non-sensitive profile
-      // fields (name); role and unlockedLessons are locked down to staff
-      // or the trusted webhook (which writes via the Admin SDK and bypasses
-      // these rules entirely).
-      allow update: if (isSelf(telegramId) &&
+      // Self can only touch their own non-sensitive profile fields; role,
+      // subscription status, and unlockedLessons are staff/webhook-only.
+      allow update: if (isSelf(id) &&
           request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['name'])) ||
-        hasAnyRole(['bursar', 'principal']);
+        hasAnyRole(['bursary', 'developer']);
 
-      allow delete: if hasRole('principal');
+      allow delete: if hasRole('developer');
     }
 
     // ---------------------------------------------------------------------
     // /feeSchedules/{classId}
-    // Public-ish reference data for the school's fee structure. Any signed-in
-    // user can read (needed to render the Bursary Dashboard); only bursar/
-    // principal can define or change fees.
+    // Includes paystackPlanCode + billingInterval for the subscription
+    // model. Any signed-in user can read (needed to render pricing);
+    // only bursary/developer can define or change it.
     // ---------------------------------------------------------------------
     match /feeSchedules/{classId} {
       allow read: if isSignedIn();
-      allow write: if hasAnyRole(['bursar', 'principal']);
+      allow write: if hasAnyRole(['bursary', 'developer']);
+    }
+
+    // ---------------------------------------------------------------------
+    // /subscriptions/{subscriptionCode}
+    // Maps a Paystack subscription back to a student — written exclusively
+    // by the webhook (Admin SDK, bypasses rules). Read access mirrors
+    // /transactions.
+    // ---------------------------------------------------------------------
+    match /subscriptions/{subscriptionCode} {
+      allow read: if isSignedIn() && (
+        resource.data.studentId == uid() ||
+        hasAnyRole(['bursary', 'developer']) ||
+        (role() == 'parent' &&
+          exists(/databases/$(database)/documents/users/$(resource.data.studentId)) &&
+          get(/databases/$(database)/documents/users/$(resource.data.studentId)).data.guardianUid == uid())
+      );
+      allow write: if false;
     }
 
     // ---------------------------------------------------------------------
     // /transactions/{reference}
-    // Payment ledger. Written exclusively by the Paystack webhook via the
-    // Admin SDK (service-account, bypasses rules). Client reads are
-    // restricted to the owning student (or their guardian) and finance staff.
-    // No client-side create/update/delete — this must always be
-    // server-attested, since it's the source of truth for unlocking content.
+    // Payment ledger. Written exclusively by the Paystack webhook (Admin
+    // SDK). No client-side create/update/delete — must always be
+    // server-attested.
     // ---------------------------------------------------------------------
     match /transactions/{reference} {
       allow read: if isSignedIn() && (
         resource.data.studentId == uid() ||
-        hasAnyRole(['bursar', 'principal']) ||
-        (role() == 'parent' && exists(/databases/$(database)/documents/users/$(resource.data.studentId)) &&
-          get(/databases/$(database)/documents/users/$(resource.data.studentId)).data.guardianTelegramId == uid())
+        hasAnyRole(['bursary', 'developer']) ||
+        (role() == 'parent' &&
+          exists(/databases/$(database)/documents/users/$(resource.data.studentId)) &&
+          get(/databases/$(database)/documents/users/$(resource.data.studentId)).data.guardianUid == uid())
       );
       allow write: if false;
     }
 
     // ---------------------------------------------------------------------
     // /teacherApplications/{applicantId}
-    // AI-vetted recruitment pipeline. Applicants create their own record and
-    // may read it back to see status; only principal/teacher (reviewers) can
-    // read the full pool, and only server-side (vet-teacher.ts, Admin SDK)
-    // writes aiScore/aiSummary — a client must never be able to set their own
-    // score. Principal may update status (HIRE/INTERVIEW/REJECT -> final).
+    // Signing up as a teacher IS submitting this application (see
+    // src/components/SignUp.tsx) — gated on AI screening via
+    // /api/vet-teacher rather than granting access immediately.
     // ---------------------------------------------------------------------
     match /teacherApplications/{applicantId} {
-      allow read: if isSelf(applicantId) || hasAnyRole(['teacher', 'principal']);
+      allow read: if isSelf(applicantId) || hasAnyRole(['teacher', 'developer']);
 
       allow create: if isSelf(applicantId) &&
         !('aiScore' in request.resource.data) &&
         !('aiSummary' in request.resource.data) &&
         request.resource.data.status == 'SUBMITTED';
 
-      // An applicant can re-save their own application (e.g. SignUp.tsx's
-      // setDoc runs a second time after a network hiccup) only while it's
-      // still in SUBMITTED — i.e. before AI scoring or a principal's
-      // decision has landed. vet-teacher.ts writes aiScore/aiSummary/status
-      // via the Admin SDK immediately after create, which bypasses rules
-      // entirely, so this window only matters if that call never completed.
-      // Once status moves to HIRE/INTERVIEW/REJECT, only principal can touch
-      // the record — the applicant can no longer edit a decision that's
-      // already been made.
+      // An applicant can re-save their own application (e.g. a retry after
+      // a dropped request) only while still SUBMITTED — before AI scoring
+      // or a developer's decision has landed. Once status moves to
+      // HIRE/INTERVIEW/REJECT, only a developer can touch the record.
       allow update: if (
           isSelf(applicantId) &&
           resource.data.status == 'SUBMITTED' &&
@@ -139,40 +141,32 @@ service cloud.firestore {
           !('aiScore' in request.resource.data) &&
           !('aiSummary' in request.resource.data)
         ) ||
-        (hasRole('principal') &&
+        (hasRole('developer') &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
 
-      allow delete: if hasRole('principal');
+      allow delete: if hasRole('developer');
     }
 
     // ---------------------------------------------------------------------
     // /applications/{applicationId}
     // Student admissions pipeline (placement test -> PENDING_FEE -> ENROLLED).
-    // A prospective family creates their own application; principal/bursar
-    // manage status transitions (e.g. marking ENROLLED once fees clear).
     // ---------------------------------------------------------------------
     match /applications/{applicationId} {
       allow read: if isSignedIn() && (
-        resource.data.parentContact.telegramId == uid() ||
-        hasAnyRole(['bursar', 'principal'])
+        resource.data.parentContact.uid == uid() ||
+        hasAnyRole(['bursary', 'developer'])
       );
 
       allow create: if isSignedIn() &&
         request.resource.data.status == 'PENDING_FEE' &&
-        request.resource.data.parentContact.telegramId == uid();
+        request.resource.data.parentContact.uid == uid();
 
-      allow update: if hasAnyRole(['bursar', 'principal']);
-      allow delete: if hasRole('principal');
+      allow update: if hasAnyRole(['bursary', 'developer']);
+      allow delete: if hasRole('developer');
     }
 
     // ---------------------------------------------------------------------
     // /classes/{classId}/lessons/{lessonId}
-    // Curriculum content. Metadata (title, isPremium) is readable by any
-    // signed-in user so the UI can render locked/unlocked states; the actual
-    // `content`/`videoUrl` fields for premium lessons should be fetched via a
-    // server endpoint that checks unlockedLessons rather than direct client
-    // reads, but we still gate the document read itself as defense in depth.
-    // Only teaching staff can author lessons.
     // ---------------------------------------------------------------------
     match /classes/{classId}/lessons/{lessonId} {
       allow read: if isSignedIn() && (
@@ -180,10 +174,9 @@ service cloud.firestore {
         isStaff() ||
         get(/databases/$(database)/documents/users/$(uid())).data.unlockedLessons[lessonId] == true
       );
-      allow write: if hasAnyRole(['teacher', 'principal']);
+      allow write: if hasAnyRole(['teacher', 'developer']);
     }
 
-    // Deny everything else by default.
     match /{document=**} {
       allow read, write: if false;
     }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db, getAuthToken, signInWithTelegramToken } from '../lib/firebase';
-import { useScholaCoreUser, type ScholaCoreUserRecord } from '../App';
+import { db, auth, getAuthToken, signInWithTelegramToken } from '../lib/firebase';
+import { type ScholaCoreUserRecord } from '../App';
 import { hapticError, hapticSuccess } from '../lib/telegram';
 
 const SUBJECTS = [
@@ -44,15 +44,12 @@ interface SignUpProps {
 }
 
 export default function SignUp({ onSignedUp }: SignUpProps) {
-  const { telegramUser } = useScholaCoreUser();
   const [path, setPath] = useState<Path>('choose');
 
-  // student/parent
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // teacher
   const [cvUrl, setCvUrl] = useState('');
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [essayAnswers, setEssayAnswers] = useState<Record<string, string>>({});
@@ -69,13 +66,13 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
     ESSAY_QUESTIONS.every((q) => (essayAnswers[q] ?? '').trim().length >= 40);
 
   const submitStudentOrParent = async (role: 'student' | 'parent') => {
-    if (!telegramUser || name.trim().length < 2) return;
+    if (name.trim().length < 2) return;
     setSubmitting(true);
     setErrorMessage(null);
 
     try {
       const token = await getAuthToken();
-      if (!token) throw new Error('Your session expired — please close and reopen the app.');
+      if (!token) throw new Error('Your session expired — please refresh and sign in again.');
 
       const res = await fetch('/api/signup', {
         method: 'POST',
@@ -97,16 +94,13 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
   };
 
   const submitTeacher = async () => {
-    if (!telegramUser || !teacherFormValid) return;
+    if (!teacherFormValid || !auth.currentUser) return;
     setSubmitting(true);
     setErrorMessage(null);
 
-    const applicantId = telegramUser.telegramId;
+    const applicantId = auth.currentUser.uid;
 
     try {
-      // Allowed by firestore.rules for any signed-in caller creating their
-      // own application (isSelf(applicantId)), regardless of role — an
-      // 'unregistered' token is enough at this point.
       await setDoc(doc(db, 'teacherApplications', applicantId), {
         fullName: name.trim(),
         cvUrl: cvUrl.trim(),
@@ -117,7 +111,7 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
       });
 
       const token = await getAuthToken();
-      if (!token) throw new Error('Your session expired — please close and reopen the app.');
+      if (!token) throw new Error('Your session expired — please refresh and sign in again.');
 
       const res = await fetch('/api/vet-teacher', {
         method: 'POST',
@@ -127,11 +121,6 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'AI screening failed');
 
-      // A fresh token (role: pending_teacher) comes back on first
-      // application only — sign in with it so the account is fully
-      // established, but deliberately don't call onSignedUp here: we want
-      // to keep showing this result screen rather than immediately
-      // jumping to the "under review" screen App.tsx shows on later visits.
       if (data.customToken) {
         await signInWithTelegramToken(data.customToken);
       }
@@ -152,18 +141,18 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
       <div className="flex min-h-screen items-center justify-center bg-core-50 p-6">
         <div className="w-full space-y-4">
           <div className="rounded-card border border-core-100 bg-white p-6 text-center">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-core-500">AI screening result</p>
-            <p className="mt-2 font-display text-4xl text-core-900">{teacherResult.score}</p>
-            <p className="text-xs text-core-500">out of 100</p>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-core-400">AI screening result</p>
+            <p className="mt-2 text-4xl font-bold text-core-950">{teacherResult.score}</p>
+            <p className="text-xs text-core-400">out of 100</p>
             <span
               className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold ${RECOMMENDATION_STYLE[teacherResult.recommendation]}`}
             >
               {teacherResult.recommendation}
             </span>
-            <p className="mt-4 text-left text-sm text-core-700">{teacherResult.summary}</p>
+            <p className="mt-4 text-left text-sm text-core-600">{teacherResult.summary}</p>
           </div>
-          <p className="text-center text-xs text-core-500">
-            Thanks for applying. The principal's office will follow up with next steps — you can close the app now.
+          <p className="text-center text-xs text-core-400">
+            Thanks for applying. You'll be contacted with next steps — you can close this now.
           </p>
         </div>
       </div>
@@ -173,37 +162,37 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
   if (path === 'teacher') {
     return (
       <div className="min-h-screen bg-core-50 px-4 py-6">
-        <div className="space-y-4">
+        <div className="mx-auto max-w-lg space-y-4">
           <div>
-            <h2 className="font-display text-xl text-core-900">Teacher application</h2>
+            <h2 className="text-xl font-bold text-core-950">Teacher application</h2>
             <p className="text-sm text-core-600">
-              This is your interview — an AI screening reviews your answers, then the principal's office follows up.
+              This is your interview — an AI screening reviews your answers, then you'll be contacted.
             </p>
           </div>
 
           <div className="space-y-3 rounded-card border border-core-100 bg-white p-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-core-700">Full name</label>
+              <label className="mb-1 block text-xs font-medium text-core-600">Full name</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-card border border-core-100 px-3 py-2 text-sm focus:border-seal-500"
+                className="w-full rounded-card border border-core-200 px-3 py-2 text-sm focus:border-brand-500"
                 placeholder="e.g. Mr. Tunde Bakare"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-core-700">CV link</label>
+              <label className="mb-1 block text-xs font-medium text-core-600">CV link</label>
               <input
                 value={cvUrl}
                 onChange={(e) => setCvUrl(e.target.value)}
-                className="w-full rounded-card border border-core-100 px-3 py-2 text-sm focus:border-seal-500"
+                className="w-full rounded-card border border-core-200 px-3 py-2 text-sm focus:border-brand-500"
                 placeholder="Link to your CV (Google Drive, Dropbox, etc.)"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-core-700">Specialties</label>
+              <label className="mb-1 block text-xs font-medium text-core-600">Specialties</label>
               <div className="flex flex-wrap gap-2">
                 {SUBJECTS.map((subject) => (
                   <button
@@ -212,8 +201,8 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
                     onClick={() => toggleSpecialty(subject)}
                     className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                       specialties.includes(subject)
-                        ? 'border-seal-500 bg-seal-500/10 text-core-900'
-                        : 'border-core-100 text-core-600 hover:bg-core-50'
+                        ? 'border-brand-500 bg-brand-50 text-brand-700'
+                        : 'border-core-200 text-core-600 hover:bg-core-50'
                     }`}
                   >
                     {subject}
@@ -226,12 +215,12 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
           <div className="space-y-3">
             {ESSAY_QUESTIONS.map((q) => (
               <div key={q} className="rounded-card border border-core-100 bg-white p-4">
-                <label className="mb-2 block text-xs font-medium text-core-700">{q}</label>
+                <label className="mb-2 block text-xs font-medium text-core-600">{q}</label>
                 <textarea
                   value={essayAnswers[q] ?? ''}
                   onChange={(e) => setEssayAnswers((prev) => ({ ...prev, [q]: e.target.value }))}
                   rows={4}
-                  className="w-full rounded-card border border-core-100 px-3 py-2 text-sm focus:border-seal-500"
+                  className="w-full rounded-card border border-core-200 px-3 py-2 text-sm focus:border-brand-500"
                   placeholder="At least a few sentences…"
                 />
               </div>
@@ -241,12 +230,12 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
           <button
             onClick={submitTeacher}
             disabled={!teacherFormValid || submitting}
-            className="w-full rounded-card bg-core-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
+            className="w-full rounded-card bg-core-950 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
           >
             {submitting ? 'Submitting for AI screening…' : 'Submit application'}
           </button>
           {errorMessage && <p className="text-xs text-signal-danger">{errorMessage}</p>}
-          <button onClick={() => setPath('choose')} className="w-full text-center text-xs text-core-500">
+          <button onClick={() => setPath('choose')} className="w-full text-center text-xs text-core-400">
             ← Back
           </button>
         </div>
@@ -258,18 +247,18 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
     const role = path;
     return (
       <div className="flex min-h-screen items-center justify-center bg-core-50 p-6">
-        <div className="w-full space-y-4">
+        <div className="w-full max-w-sm space-y-4">
           <div className="text-center">
-            <h2 className="font-display text-xl text-core-900">{role === 'student' ? "You're a student" : "You're a parent"}</h2>
+            <h2 className="text-xl font-bold text-core-950">{role === 'student' ? "You're a student" : "You're a parent"}</h2>
             <p className="text-sm text-core-600">Just your name to get started.</p>
           </div>
 
           <div className="rounded-card border border-core-100 bg-white p-4">
-            <label className="mb-1 block text-xs font-medium text-core-700">Full name</label>
+            <label className="mb-1 block text-xs font-medium text-core-600">Full name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-card border border-core-100 px-3 py-2 text-sm focus:border-seal-500"
+              className="w-full rounded-card border border-core-200 px-3 py-2 text-sm focus:border-brand-500"
               placeholder={role === 'student' ? 'e.g. Amara Chukwu' : 'e.g. Mrs. Ifeoma Chukwu'}
               autoFocus
             />
@@ -278,12 +267,12 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
           <button
             onClick={() => submitStudentOrParent(role)}
             disabled={name.trim().length < 2 || submitting}
-            className="w-full rounded-card bg-seal-500 px-4 py-3 text-sm font-semibold text-core-950 disabled:opacity-40"
+            className="w-full rounded-card bg-brand-500 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
           >
             {submitting ? 'Setting up your account…' : 'Continue'}
           </button>
           {errorMessage && <p className="text-center text-xs text-signal-danger">{errorMessage}</p>}
-          <button onClick={() => setPath('choose')} className="w-full text-center text-xs text-core-500">
+          <button onClick={() => setPath('choose')} className="w-full text-center text-xs text-core-400">
             ← Back
           </button>
         </div>
@@ -295,31 +284,31 @@ export default function SignUp({ onSignedUp }: SignUpProps) {
     <div className="flex min-h-screen flex-col items-center justify-center bg-core-50 p-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div>
-          <p className="font-display text-2xl text-core-900">Welcome to ScholaCore</p>
+          <p className="text-2xl font-bold text-core-950">Welcome to ScholaCore</p>
           <p className="mt-1 text-sm text-core-600">Let's get you set up. Which are you?</p>
         </div>
 
         <div className="space-y-3">
           <button
             onClick={() => setPath('student')}
-            className="w-full rounded-card border border-core-100 bg-white px-4 py-4 text-left transition-colors hover:bg-core-50"
+            className="w-full rounded-card border border-core-100 bg-white px-4 py-4 text-left transition-colors hover:border-brand-500"
           >
-            <p className="text-sm font-semibold text-core-900">Student</p>
-            <p className="text-xs text-core-500">Access your classes, lessons, and fees</p>
+            <p className="text-sm font-semibold text-core-950">Student</p>
+            <p className="text-xs text-core-400">Access your classes, study library, and subscription</p>
           </button>
           <button
             onClick={() => setPath('parent')}
-            className="w-full rounded-card border border-core-100 bg-white px-4 py-4 text-left transition-colors hover:bg-core-50"
+            className="w-full rounded-card border border-core-100 bg-white px-4 py-4 text-left transition-colors hover:border-brand-500"
           >
-            <p className="text-sm font-semibold text-core-900">Parent / Guardian</p>
-            <p className="text-xs text-core-500">Track fees and your child's progress</p>
+            <p className="text-sm font-semibold text-core-950">Parent / Guardian</p>
+            <p className="text-xs text-core-400">Manage your child's subscription and progress</p>
           </button>
           <button
             onClick={() => setPath('teacher')}
-            className="w-full rounded-card border border-core-100 bg-white px-4 py-4 text-left transition-colors hover:bg-core-50"
+            className="w-full rounded-card border border-core-100 bg-white px-4 py-4 text-left transition-colors hover:border-brand-500"
           >
-            <p className="text-sm font-semibold text-core-900">Teacher</p>
-            <p className="text-xs text-core-500">Apply to teach — AI-screened application</p>
+            <p className="text-sm font-semibold text-core-950">Teacher</p>
+            <p className="text-xs text-core-400">Apply to teach — AI-screened application</p>
           </button>
         </div>
       </div>

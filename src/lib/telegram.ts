@@ -19,6 +19,13 @@ export interface ScholaCoreTelegramUser {
 
 let initialized = false;
 
+/**
+ * Boots the Telegram Mini App SDK. Safe to call multiple times, and safe
+ * to call outside Telegram entirely (the app now also runs as a normal
+ * website — see App.tsx) — init() throws when there's no real Telegram
+ * launch context, and that's caught here rather than left to crash the
+ * whole page before React renders anything.
+ */
 export function initTelegramApp(): void {
   if (initialized) return;
 
@@ -40,6 +47,14 @@ export function initTelegramApp(): void {
   }
 }
 
+/**
+ * Pulls the authenticated Telegram user out of launch params, or null if
+ * this isn't running inside Telegram at all (which App.tsx treats as "show
+ * the normal web sign-in" rather than an error). This is read-only
+ * client-side context for UI purposes — it must NOT be trusted for access
+ * control; always re-verify `initData` server-side before minting a
+ * Firebase custom token.
+ */
 export function getTelegramUser(): ScholaCoreTelegramUser | null {
   try {
     const { initData } = retrieveLaunchParams();
@@ -59,6 +74,11 @@ export function getTelegramUser(): ScholaCoreTelegramUser | null {
   }
 }
 
+/**
+ * Returns the raw, still-signed initData string. This is what gets sent to
+ * the backend for HMAC verification — never parse-and-forward the parsed
+ * object, since that discards the signature.
+ */
 export function getRawInitData(): string | null {
   try {
     const { initDataRaw } = retrieveLaunchParams();

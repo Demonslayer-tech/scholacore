@@ -2,10 +2,16 @@ import type { VercelRequest } from '@vercel/node';
 import { getAdminAuth } from './firebaseAdmin';
 
 export interface VerifiedCaller {
-  telegramId: string;
+  uid: string;
   role: string;
 }
 
+/**
+ * Verifies the Firebase ID token in the Authorization header and returns
+ * the caller's real identity — uid works the same whether it came from a
+ * Telegram-derived custom token or a normal Firebase email/password
+ * account, so every endpoint downstream of this is auth-method-agnostic.
+ */
 export async function verifyCaller(req: VercelRequest): Promise<VerifiedCaller | null> {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) return null;
@@ -15,11 +21,7 @@ export async function verifyCaller(req: VercelRequest): Promise<VerifiedCaller |
 
   try {
     const decoded = await getAdminAuth().verifyIdToken(idToken);
-    // Fail closed: if a verified token is ever missing its role claim,
-    // default to the same least-privilege role brand-new users get
-    // ('unregistered'), not 'student'. A real role should only ever come
-    // from an explicit claim minted by our own signup/auth endpoints.
-    return { telegramId: decoded.uid, role: typeof decoded.role === 'string' ? decoded.role : 'unregistered' };
+    return { uid: decoded.uid, role: typeof decoded.role === 'string' ? decoded.role : 'unregistered' };
   } catch (err) {
     console.warn('[verifyCaller] Token verification failed:', err instanceof Error ? err.message : err);
     return null;
