@@ -1,72 +1,102 @@
 import crypto from 'crypto';
 
-export interface TelegramInitDataUser {
+export interface TelegramUser {
   id: number;
+  is_bot: boolean;
   first_name: string;
   last_name?: string;
   username?: string;
   language_code?: string;
-  photo_url?: string;
+  is_premium?: boolean;
+  added_to_attachment_menu?: boolean;
+  allows_write_to_pm?: boolean;
+  query_id?: string;
+  auth_date: number;
+  hash: string;
 }
-
-export interface VerifiedTelegramInitData {
-  user: TelegramInitDataUser;
-  authDate: number;
-}
-
-const MAX_INIT_DATA_AGE_SECONDS = 24 * 60 * 60;
 
 /**
- * Verifies Telegram Mini App `initData` per Telegram's documented algorithm:
- * https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
- *
- *   1. secret_key = HMAC_SHA256(key="WebAppData", data=bot_token)
- *   2. data_check_string = all fields except `hash`, sorted alphabetically,
- *      joined as "key=value" with "\n"
- *   3. computed_hash = HMAC_SHA256(key=secret_key, data=data_check_string)
- *   4. computed_hash must equal the `hash` field (constant-time compare)
+ * Verifies Telegram initData using HMAC-SHA256.
+ * Follows Telegram Bot API security guidelines:
+ * https://core.telegram.org/bots/webapps#validating-data-received-from-the-web-app
  */
-export function verifyTelegramInitData(initData: string, botToken: string): VerifiedTelegramInitData {
+export function verifyTelegramInitData(
+  initData: string,
+  botToken: string
+): TelegramUser {
+  if (!initData || typeof initData !== 'string') {
+    throw new Error('initData must be a non-empty string');
+  }
+
+  if (!botToken || typeof botToken !== 'string') {
+    throw new Error('botToken must be a non-empty string');
+  }
+
+  // Parse the init data string (URL-encoded format: key1=value1&key2=value2&...)
   const params = new URLSearchParams(initData);
   const hash = params.get('hash');
+
   if (!hash) {
-    throw new Error('initData is missing the hash field');
+    throw new Error('initData missing required "hash" field');
   }
+
+  // Remove hash from params for verification
   params.delete('hash');
 
-  const dataCheckString = Array.from(params.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${value}`)
-    .join('\n');
+  // Sort remaining params alphabetically and reconstruct data string
+  const entries = Array.from(params.entries()).sort(([a], [b]) => a.localeCompare(b));
+  const dataCheckString = entries.map(([key, value]) => `${key}=${value}`).join('\n');
 
-  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-  const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+  // Compute secret key: HMAC-SHA256(botToken, "WebAppData")
+  const secretKey = crypto
+    .createHmac('sha256', 'WebAppData')
+    .update(botToken)
+    .digest();
 
-  const hashBuffer = Buffer.from(hash, 'utf8');
-  const computedBuffer = Buffer.from(computedHash, 'utf8');
-  const isValid =
-    hashBuffer.length === computedBuffer.length && crypto.timingSafeEqual(hashBuffer, computedBuffer);
+  // Verify the signature
+  const computedHash = crypto
+    .createHmac('sha256', secretKey)
+    .update(dataCheckString)
+    .digest('hex');
 
-  if (!isValid) {
-    throw new Error('initData signature verification failed');
+  if (computedHash !== hash) {
+    throw new Error(
+      `Telegram signature verification failed. Expected ${hash}, got ${computedHash}`
+    );
   }
 
-  const authDate = Number(params.get('auth_date'));
-  if (!authDate || Date.now() / 1000 - authDate > MAX_INIT_DATA_AGE_SECONDS) {
-    throw new Error('initData has expired');
+  // Parse user object (stored as JSON in the user field)
+  const userJson = params.get('user');
+  if (!userJson) {
+    throw new Error('initData missing required "user" field');
   }
 
-  const userRaw = params.get('user');
-  if (!userRaw) {
-    throw new Error('initData is missing the user field');
-  }
-
-  let user: TelegramInitDataUser;
+  let user: TelegramUser;
   try {
-    user = JSON.parse(userRaw);
-  } catch {
-    throw new Error('initData user field is not valid JSON');
+    user = JSON.parse(userJson);
+  } catch (err) {
+    throw new Error(`Failed to parse user JSON: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  return { user, authDate };
+  // Validate required user fields
+  if (!user.id || typeof user.id !== 'number') {
+    throw new Error('user.id must be a number');
+  }
+  if (!user.first_name || typeof user.first_name !== 'string') {
+    throw new Error('user.first_name must be a non-empty string');
+  }
+  if (!user.auth_date || typeof user.auth_date !== 'number') {
+    throw new Error('user.auth_date must be a number');
+  }
+
+  // Verify auth_date is recent (within last 24 hours) to prevent replay attacks
+  const now = Math.floor(Date.now() / 1000);
+  const maxAge = 24 * 60 * 60; // 24 hours
+  if (now - user.auth_date > maxAge) {
+    throw new Error(
+      `initData expired: auth_date ${user.auth_date} is older than ${maxAge} seconds`
+    );
+  }
+
+  return user;
 }
