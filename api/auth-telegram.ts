@@ -43,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Invalid Telegram session' });
   }
 
-  const telegramId = String(verified.user.id);
+  const telegramId = String(verified.id);
 
   try {
     const db = getAdminFirestore();
@@ -56,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const data = snap.data()!;
-    const fallbackName = [verified.user.first_name, verified.user.last_name].filter(Boolean).join(' ');
+    const fallbackName = [verified.first_name, verified.last_name].filter(Boolean).join(' ');
     const userRecord = {
       name: data.name ?? fallbackName,
       role: data.role ?? 'student',
