@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ScholaCore — Admin Dashboard</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="sc-header">
+    <span class="sc-header__title">ScholaCore — Admin</span>
+  </header>
+
+  <main>
+    <div class="sc-card" id="login-card">
+      <h1 style="margin:0 0 4px;font-size:1.3rem;color:#0F52BA;">Admin Login</h1>
+      <form id="login-form">
+        <label class="sc-label" for="email">Email</label>
+        <input class="sc-input" id="email" type="email" required />
+        <label class="sc-label" for="password">Password</label>
+        <input class="sc-input" id="password" type="password" required />
+        <button class="sc-btn" type="submit">Log In</button>
+      </form>
+      <div id="login-alert" class="sc-alert"></div>
+    </div>
+
+    <div class="sc-card sc-card--wide" id="dashboard-card" style="display:none;">
+      <h2 style="margin:0 0 4px;color:#0F52BA;">Pending Teacher Applications</h2>
+      <p style="color:#475569;font-size:0.9rem;">Review credentials and approve or reject each applicant.</p>
+
+      <table class="sc-table" id="applications-table">
+        <thead>
+          <tr><th>Name</th><th>Subjects</th><th>Credentials</th><th>Documents</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody id="applications-body"><tr><td colspan="6">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer class="sc-footer">
+    <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/terms-of-service.html">Terms of Service</a>
+  </footer>
+
+  <script src="/js/firebase-config.js"></script>
+  <script>
+    const loginAlert = document.getElementById("login-alert");
+
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+      } catch (err) {
+        showAlert(loginAlert, err.message, "error");
+      }
+    });
+
+    function badgeFor(status) {
+      const map = { pending_vetting: "pending", approved: "approved", rejected: "rejected" };
+      const label = status.replace("_", " ");
+      return `<span class="sc-badge sc-badge--${map[status] || "pending"}">${label}</span>`;
+    }
+
+    async function loadApplications() {
+      const body = document.getElementById("applications-body");
+      const snap = await db.collection("teachers").orderBy("status").get();
+
+      if (snap.empty) {
+        body.innerHTML = "<tr><td colspan='6'>No applications yet.</td></tr>";
+        return;
+      }
+
+      body.innerHTML = "";
+      snap.forEach((doc) => {
+        const d = doc.data();
+        const docsLinks = (d.verificationDocUrls || [])
+          .map((url, i) => `<a href="${url}" target="_blank" rel="noopener">Doc ${i + 1}</a>`)
+          .join(" · ");
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${d.fullName}<br><span style="color:#94A3B8;font-size:0.75rem;">${d.email}</span></td>
+          <td>${(d.subjectSpecializations || []).join(", ")}</td>
+          <td>${d.credentialsSummary || ""}</td>
+          <td>${docsLinks || "—"}</td>
+          <td>${badgeFor(d.status)}</td>
+          <td>
+            <button class="sc-btn sc-btn--secondary" style="width:auto;margin:0 4px 0 0;padding:6px 10px;" data-approve="${doc.id}">Approve</button>
+            <button class="sc-btn sc-btn--secondary" style="width:auto;margin:0;padding:6px 10px;color:#B91C1C;border-color:#B91C1C;" data-reject="${doc.id}">Reject</button>
+          </td>
+        `;
+        body.appendChild(row);
+      });
+
+      body.querySelectorAll("[data-approve]").forEach((btn) => {
+        btn.addEventListener("click", () => setStatus(btn.dataset.approve, "approved"));
+      });
+      body.querySelectorAll("[data-reject]").forEach((btn) => {
+        btn.addEventListener("click", () => setStatus(btn.dataset.reject, "rejected"));
+      });
+    }
+
+    async function setStatus(teacherId, status) {
+      const adminUid = auth.currentUser.uid;
+      await db.collection("teachers").doc(teacherId).update({
+        status,
+        reviewedBy: adminUid,
+        reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      loadApplications();
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) return;
+      const userSnap = await db.collection("users").doc(user.uid).get();
+      if (!userSnap.exists || userSnap.data().role !== "admin") {
+        showAlert(loginAlert, "This account does not have admin access.", "error");
+        await auth.signOut();
+        return;
+      }
+      document.getElementById("login-card").style.display = "none";
+      document.getElementById("dashboard-card").style.display = "block";
+      loadApplications();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ScholaCore — Teacher Vetting Application</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="sc-header">
+    <span class="sc-header__title">ScholaCore</span>
+  </header>
+
+  <main>
+    <div class="sc-card">
+      <h1 style="margin:0 0 4px;font-size:1.4rem;color:#0F52BA;">Teacher Vetting Application</h1>
+      <p style="margin:0;color:#475569;font-size:0.9rem;">Submit your credentials for review by our admissions team.</p>
+
+      <form id="vetting-form">
+        <label class="sc-label" for="fullName">Full Name</label>
+        <input class="sc-input" id="fullName" type="text" required />
+
+        <label class="sc-label" for="email">Email</label>
+        <input class="sc-input" id="email" type="email" required />
+
+        <label class="sc-label" for="password">Create a Password</label>
+        <input class="sc-input" id="password" type="password" minlength="8" required />
+
+        <label class="sc-label" for="subjects">Subject Specialization(s)</label>
+        <input class="sc-input" id="subjects" type="text" placeholder="e.g. Mathematics, Physics" required />
+
+        <label class="sc-label" for="credentials">Credentials Summary</label>
+        <input class="sc-input" id="credentials" type="text" placeholder="e.g. B.Sc Mathematics, 5 years teaching" required />
+
+        <label class="sc-label" for="docs">Upload ID / Degree Certificate (PDF or image)</label>
+        <input class="sc-input" id="docs" type="file" accept="application/pdf,image/*" multiple required />
+
+        <button class="sc-btn" type="submit" id="submit-btn">Submit Application</button>
+      </form>
+
+      <div id="alert" class="sc-alert"></div>
+    </div>
+  </main>
+
+  <footer class="sc-footer">
+    <a href="/privacy-policy.html">Privacy Policy</a> &nbsp;·&nbsp; <a href="/terms-of-service.html">Terms of Service</a>
+  </footer>
+
+  <script src="/js/firebase-config.js"></script>
+  <script>
+    initTelegramWebApp();
+    const alertEl = document.getElementById("alert");
+    const submitBtn = document.getElementById("submit-btn");
+
+    document.getElementById("vetting-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting…";
+
+      const fullName = document.getElementById("fullName").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const subjects = document.getElementById("subjects").value
+        .split(",").map(s => s.trim()).filter(Boolean);
+      const credentialsSummary = document.getElementById("credentials").value.trim();
+      const files = document.getElementById("docs").files;
+
+      try {
+        const cred = await auth.createUserWithEmailAndPassword(email, password);
+        const uid = cred.user.uid;
+
+        const uploadedUrls = [];
+        for (const file of files) {
+          const ref = storage.ref(`teacher-verifications/${uid}/${Date.now()}_${file.name}`);
+          const snap = await ref.put(file);
+          uploadedUrls.push(await snap.ref.getDownloadURL());
+        }
+
+        await db.collection("users").doc(uid).set({
+          fullName,
+          email,
+          role: "teacher",
+          gradeLevel: null,
+          paymentStatus: "unpaid",
+          telegramUserId: null,
+          aiQueryCount: 0,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await db.collection("teachers").doc(uid).set({
+          fullName,
+          email,
+          credentialsSummary,
+          subjectSpecializations: subjects,
+          verificationDocUrls: uploadedUrls,
+          status: "pending_vetting",
+          reviewedBy: null,
+          reviewedAt: null
+        });
+
+        showAlert(alertEl, "Application submitted. We'll email you once it's reviewed.", "success");
+        document.getElementById("vetting-form").reset();
+      } catch (err) {
+        showAlert(alertEl, err.message, "error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Application";
+      }
+    });
+  </script>
+</body>
+</html>
