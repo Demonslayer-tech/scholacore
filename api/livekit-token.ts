@@ -45,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const userData = userSnap.data()!;
-    const canBroadcast = userData.role === 'teacher' || userData.role === 'developer';
+    const canBroadcast = userData.role === 'teacher' || userData.role === 'principal';
 
     if (!canBroadcast && userData.classId !== classId) {
       return res.status(403).json({ error: 'Not enrolled in this class' });

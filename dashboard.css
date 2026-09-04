@@ -1,0 +1,434 @@
+/* dashboard.css — Scholacore classroom, white/blue glassmorphism */
+
+:root {
+  --icy: #f0f8ff;
+  --icy-deep: #dbe9fb;
+  --blue-900: #071f4a;
+  --blue-800: #0a2f6b;
+  --blue-700: #123e8a;
+  --blue-500: #2f6fdb;
+  --blue-400: #4f8dff;
+  --white: #ffffff;
+
+  --glass-bg: rgba(255, 255, 255, 0.52);
+  --glass-bg-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-shadow: 0 20px 60px rgba(7, 31, 74, 0.16);
+
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --font: "Roboto", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  color: var(--blue-900);
+  background-color: var(--icy);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ---------- Ambient background ---------- */
+
+.bg-pattern {
+  position: fixed;
+  inset: 0;
+  background-image: url("images/pattern_bg.png");
+  background-repeat: repeat;
+  background-size: 220px;
+  opacity: 0.08;
+  z-index: -3;
+  pointer-events: none;
+}
+
+.bg-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(90px);
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.bg-orb--one {
+  width: 480px;
+  height: 480px;
+  top: -160px;
+  left: -140px;
+  background: radial-gradient(circle, var(--blue-400), transparent 70%);
+}
+
+.bg-orb--two {
+  width: 560px;
+  height: 560px;
+  bottom: -220px;
+  right: -180px;
+  background: radial-gradient(circle, var(--blue-700), transparent 70%);
+}
+
+.bg-orb--three {
+  width: 320px;
+  height: 320px;
+  top: 40%;
+  left: 60%;
+  background: radial-gradient(circle, var(--blue-500), transparent 70%);
+  opacity: 0.35;
+}
+
+/* ---------- Glass primitive ---------- */
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-lg);
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.btn:focus-visible {
+  outline: 3px solid var(--blue-400);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: linear-gradient(135deg, var(--blue-700), var(--blue-900));
+  color: var(--white);
+  box-shadow: 0 10px 24px rgba(10, 47, 107, 0.35);
+}
+
+.btn--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(10, 47, 107, 0.4);
+}
+
+.btn--ghost {
+  background: rgba(255, 255, 255, 0.4);
+  color: var(--blue-800);
+  border: 1px solid rgba(10, 47, 107, 0.2);
+}
+
+.btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+/* ---------- Topbar ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--space-5) var(--space-6) 0;
+  padding: var(--space-3) var(--space-5);
+}
+
+.topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.topbar__logo {
+  height: 32px;
+  width: auto;
+}
+
+.topbar__title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--blue-900);
+  letter-spacing: 0.02em;
+}
+
+.topbar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.topbar__username {
+  font-weight: 500;
+  color: var(--blue-800);
+}
+
+/* ---------- Main grid ---------- */
+
+.classroom-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(320px, 1fr);
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6) var(--space-7);
+  align-items: start;
+}
+
+/* ---------- Video stage ---------- */
+
+.stage {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.stage__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stage__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--blue-900);
+}
+
+.live-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  background: rgba(10, 47, 107, 0.1);
+  color: var(--blue-700);
+}
+
+.live-badge.is-live {
+  background: #ff3b3b;
+  color: var(--white);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.video-container {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--blue-900);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-container video.lk-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-placeholder,
+.stream-error {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 0 var(--space-5);
+}
+
+/* ---------- Librarian sidebar ---------- */
+
+.librarian {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  height: min(640px, 78vh);
+}
+
+.librarian__header {
+  border-bottom: 1px solid rgba(10, 47, 107, 0.12);
+  padding-bottom: var(--space-3);
+}
+
+.librarian__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--blue-900);
+}
+
+.librarian__subtitle {
+  margin: var(--space-1) 0 0;
+  font-size: 0.85rem;
+  color: var(--blue-700);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-right: var(--space-1);
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  word-wrap: break-word;
+}
+
+.chat-bubble.ai {
+  align-self: flex-start;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  color: var(--blue-900);
+  border-bottom-left-radius: var(--space-1);
+}
+
+.chat-bubble.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
+  color: var(--white);
+  border-bottom-right-radius: var(--space-1);
+}
+
+.chat-bubble.typing {
+  opacity: 0.6;
+}
+
+.chat-form {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.chat-input {
+  flex: 1;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(10, 47, 107, 0.2);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--blue-900);
+}
+
+.chat-input:focus-visible {
+  outline: 2px solid var(--blue-400);
+  outline-offset: 1px;
+}
+
+.chat-send {
+  padding: var(--space-3) var(--space-4);
+}
+
+/* ---------- Unlock overlay ---------- */
+
+.unlock-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 31, 74, 0.45);
+  backdrop-filter: blur(6px);
+  z-index: 50;
+  padding: var(--space-5);
+}
+
+.unlock-overlay.visible {
+  display: flex;
+}
+
+.unlock-card {
+  max-width: 420px;
+  padding: var(--space-6);
+  text-align: center;
+  background: var(--glass-bg-strong);
+}
+
+.unlock-card__title {
+  margin: 0 0 var(--space-3);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--blue-900);
+}
+
+.unlock-card__text {
+  margin: 0 0 var(--space-5);
+  color: var(--blue-800);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.unlock-card__button {
+  width: 100%;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 960px) {
+  .classroom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .librarian {
+    height: 480px;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    margin: var(--space-3) var(--space-3) 0;
+  }
+
+  .classroom-grid {
+    padding: var(--space-3);
+  }
+
+  .topbar__username {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-badge.is-live {
+    animation: none;
+  }
+  .btn {
+    transition: none;
+  }
+}
