@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScholaCore — Teacher Vetting Application</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <header class="bg-white border-b-2 border-sc-blue px-6 py-4">
+    <span class="text-sc-blue-dark font-bold text-xl">ScholaCore</span>
+  </header>
+
+  <main>
+    <div class="sc-card">
+      <h1 class="text-xl font-bold text-sc-blue-dark mb-1">Teacher Vetting Application</h1>
+      <p class="text-slate-600 text-sm">Submit your credentials for review by our admissions team.</p>
+
+      <form id="vetting-form">
+        <label class="sc-label" for="fullName">Full Name</label>
+        <input class="sc-input" id="fullName" type="text" required />
+
+        <label class="sc-label" for="email">Email</label>
+        <input class="sc-input" id="email" type="email" required />
+
+        <label class="sc-label" for="password">Create a Password</label>
+        <input class="sc-input" id="password" type="password" minlength="8" required />
+
+        <label class="sc-label" for="subjects">Subject Specialization(s)</label>
+        <input class="sc-input" id="subjects" type="text" placeholder="e.g. Mathematics, Physics" required />
+
+        <label class="sc-label" for="credentials">Credentials Summary</label>
+        <input class="sc-input" id="credentials" type="text" placeholder="e.g. B.Sc Mathematics, 5 years teaching" required />
+
+        <label class="sc-label" for="docs">Upload ID / Degree Certificate (PDF or image)</label>
+        <input class="sc-input" id="docs" type="file" accept="application/pdf,image/*" multiple required />
+
+        <button class="sc-btn" type="submit" id="submit-btn">Submit Application</button>
+      </form>
+
+      <div id="alert" class="sc-alert"></div>
+    </div>
+  </main>
+
+  <footer class="text-center text-slate-500 text-sm p-6">
+    <a href="/privacy-policy.html" class="text-sc-blue-dark">Privacy Policy</a> ·
+    <a href="/terms-of-service.html" class="text-sc-blue-dark">Terms of Service</a>
+  </footer>
+
+  <script type="module" src="/src/pages/teacher-vetting.ts"></script>
+</body>
+</html>

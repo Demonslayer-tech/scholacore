@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScholaCore — Terms of Service</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <header class="bg-white border-b-2 border-sc-blue px-6 py-4">
+    <span class="text-sc-blue-dark font-bold text-xl">ScholaCore</span>
+  </header>
+
+  <main>
+    <div class="sc-card sc-card--wide">
+      <h1 class="text-2xl font-bold text-sc-blue-dark">Terms of Service</h1>
+      <p class="text-slate-500 text-sm">Last updated: <span id="date"></span></p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">1. Acceptance of Terms</h3>
+      <p class="mt-2">By creating an account or using ScholaCore, you agree to these Terms of Service.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">2. Accounts</h3>
+      <p class="mt-2">Students and teachers must provide accurate information when registering. Teacher accounts are subject to a vetting review before gaining access to teaching tools.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">3. Payments</h3>
+      <p class="mt-2">Tuition and bursary payments are processed through Paystack. Access to class groups is granted automatically once payment is confirmed. Refunds, where applicable, follow the school's stated refund policy.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">4. Live Classes and Recordings</h3>
+      <p class="mt-2">Live classes may be recorded for student review. By joining a live class, you consent to being included in that recording.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">5. AI Library</h3>
+      <p class="mt-2">The AI-powered study tool is provided for educational support and is subject to a fair-use daily query limit. Responses are generated automatically and may contain errors; they do not replace instruction from a qualified teacher.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">6. Acceptable Use</h3>
+      <p class="mt-2">Users must not misuse the Telegram class groups, share verification documents fraudulently, or attempt to circumvent payment or vetting requirements.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">7. Termination</h3>
+      <p class="mt-2">ScholaCore may suspend or terminate accounts that violate these terms or misuse the platform.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">8. Contact</h3>
+      <p class="mt-2">Questions about these terms can be directed to your school's ScholaCore administrator.</p>
+    </div>
+  </main>
+
+  <footer class="text-center text-slate-500 text-sm p-6">
+    <a href="/privacy-policy.html" class="text-sc-blue-dark">Privacy Policy</a> ·
+    <a href="/terms-of-service.html" class="text-sc-blue-dark">Terms of Service</a>
+  </footer>
+
+  <script>document.getElementById('date').textContent = new Date().toLocaleDateString();</script>
+</body>
+</html>

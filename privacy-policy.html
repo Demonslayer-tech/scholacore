@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScholaCore — Privacy Policy</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <header class="bg-white border-b-2 border-sc-blue px-6 py-4">
+    <span class="text-sc-blue-dark font-bold text-xl">ScholaCore</span>
+  </header>
+
+  <main>
+    <div class="sc-card sc-card--wide">
+      <h1 class="text-2xl font-bold text-sc-blue-dark">Privacy Policy</h1>
+      <p class="text-slate-500 text-sm">Last updated: <span id="date"></span></p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">1. Information We Collect</h3>
+      <p class="mt-2">We collect account information (name, email, grade level or subject specialization), payment records processed through Paystack, teacher verification documents, class attendance and recordings, and your Telegram user ID when you access ScholaCore through Telegram.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">2. How We Use Your Information</h3>
+      <p class="mt-2">We use your information to provide access to classes, process bursary and tuition payments, verify teacher credentials, deliver Telegram class invites and reminders, and improve the AI tutoring library.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">3. Payment Information</h3>
+      <p class="mt-2">Payments are processed by Paystack. ScholaCore does not store your card details; Paystack transaction references are stored to reconcile payment status.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">4. Data Storage</h3>
+      <p class="mt-2">Data is stored using Firebase (Firestore and Storage). Teacher verification documents are only visible to the submitting teacher and school administrators.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">5. Data Sharing</h3>
+      <p class="mt-2">We do not sell personal data. Data is shared only with the service providers necessary to operate ScholaCore (Paystack, Firebase, LiveKit, Groq, Telegram).</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">6. Your Rights</h3>
+      <p class="mt-2">You may request access to, correction of, or deletion of your personal data by contacting the school administration.</p>
+
+      <h3 class="font-semibold text-sc-blue-dark mt-6">7. Contact</h3>
+      <p class="mt-2">For privacy questions, contact your school's ScholaCore administrator.</p>
+    </div>
+  </main>
+
+  <footer class="text-center text-slate-500 text-sm p-6">
+    <a href="/privacy-policy.html" class="text-sc-blue-dark">Privacy Policy</a> ·
+    <a href="/terms-of-service.html" class="text-sc-blue-dark">Terms of Service</a>
+  </footer>
+
+  <script>document.getElementById('date').textContent = new Date().toLocaleDateString();</script>
+</body>
+</html>

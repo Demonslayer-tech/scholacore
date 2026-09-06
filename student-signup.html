@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScholaCore — Student Sign Up</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <header class="bg-white border-b-2 border-sc-blue px-6 py-4">
+    <span class="text-sc-blue-dark font-bold text-xl">ScholaCore</span>
+  </header>
+
+  <main>
+    <div class="sc-card">
+      <h1 class="text-xl font-bold text-sc-blue-dark mb-1">Student Account</h1>
+      <p class="text-slate-600 text-sm">Sign up or log in to access your classes.</p>
+
+      <form id="signup-form">
+        <label class="sc-label" for="fullName">Full Name</label>
+        <input class="sc-input" id="fullName" type="text" required />
+
+        <label class="sc-label" for="gradeLevel">Grade Level</label>
+        <select class="sc-select" id="gradeLevel" required>
+          <option value="">Select grade</option>
+          <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+          <option>SSS 1</option><option>SSS 2</option><option>SSS 3</option>
+        </select>
+
+        <label class="sc-label" for="email">Email</label>
+        <input class="sc-input" id="email" type="email" required />
+
+        <label class="sc-label" for="password">Password</label>
+        <input class="sc-input" id="password" type="password" minlength="8" required />
+
+        <button class="sc-btn" type="submit">Create Account</button>
+      </form>
+
+      <div id="alert" class="sc-alert"></div>
+
+      <p class="text-center mt-4 text-sm">
+        Already have an account? <a href="#" id="show-login" class="text-sc-blue-dark underline">Log in</a>
+      </p>
+
+      <form id="login-form" class="hidden">
+        <label class="sc-label" for="loginEmail">Email</label>
+        <input class="sc-input" id="loginEmail" type="email" required />
+        <label class="sc-label" for="loginPassword">Password</label>
+        <input class="sc-input" id="loginPassword" type="password" required />
+        <button class="sc-btn" type="submit">Log In</button>
+      </form>
+    </div>
+  </main>
+
+  <footer class="text-center text-slate-500 text-sm p-6">
+    <a href="/privacy-policy.html" class="text-sc-blue-dark">Privacy Policy</a> ·
+    <a href="/terms-of-service.html" class="text-sc-blue-dark">Terms of Service</a>
+  </footer>
+
+  <script type="module" src="/src/pages/student-signup.ts"></script>
+</body>
+</html>

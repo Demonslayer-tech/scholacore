@@ -37,8 +37,8 @@ firebase deploy --only firestore:rules,storage
 ## Build status
 - **Phase 1 (done):** Firestore schema, security rules, `.env.example`,
   project scaffold.
-- **Phase 2 (next):** Student/teacher auth pages, teacher vetting form,
+- **Phase 2 (done):** Student/teacher auth pages, teacher vetting form,
   teacher portal, admin dashboard, privacy/terms pages.
-- **Phase 3:** Paystack webhook + Telegram invite automation.
+- **Phase 3 (next):** Paystack webhook + Telegram invite automation.
 - **Phase 4:** Groq AI Library, LiveKit classroom + Egress recording,
   scheduled class reminders.

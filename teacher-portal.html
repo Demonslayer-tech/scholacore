@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScholaCore — Teacher Portal</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <header class="bg-white border-b-2 border-sc-blue px-6 py-4">
+    <span class="text-sc-blue-dark font-bold text-xl">ScholaCore — Teacher Portal</span>
+  </header>
+
+  <main>
+    <div class="sc-card" id="login-card">
+      <h1 class="text-lg font-bold text-sc-blue-dark mb-1">Teacher Login</h1>
+      <form id="login-form">
+        <label class="sc-label" for="email">Email</label>
+        <input class="sc-input" id="email" type="email" required />
+        <label class="sc-label" for="password">Password</label>
+        <input class="sc-input" id="password" type="password" required />
+        <button class="sc-btn" type="submit">Log In</button>
+      </form>
+      <div id="login-alert" class="sc-alert"></div>
+    </div>
+
+    <div class="sc-card hidden" id="pending-card">
+      <h2 class="text-lg font-bold text-sc-blue-dark mb-2">Application Under Review</h2>
+      <p class="text-slate-600">Your teacher application is
+        <span class="sc-badge sc-badge--pending">pending vetting</span>.
+        You'll get access to the portal once an admin approves it.
+      </p>
+    </div>
+
+    <div class="sc-card hidden" id="rejected-card">
+      <h2 class="text-lg font-bold text-sc-blue-dark mb-2">Application Not Approved</h2>
+      <p class="text-slate-600">Your application was
+        <span class="sc-badge sc-badge--rejected">rejected</span>.
+        Contact the school office for details.
+      </p>
+    </div>
+
+    <div class="sc-card sc-card--wide hidden" id="portal-card">
+      <h2 class="text-lg font-bold text-sc-blue-dark">Welcome, <span id="teacher-name"></span></h2>
+      <p class="text-slate-600 text-sm">Status: <span class="sc-badge sc-badge--approved">approved</span></p>
+
+      <h3 class="text-sc-blue-dark font-semibold mt-6">My Schedule</h3>
+      <table class="sc-table">
+        <thead><tr><th>Subject</th><th>Start</th><th>End</th><th>Action</th></tr></thead>
+        <tbody id="schedule-body"><tr><td colspan="4">Loading…</td></tr></tbody>
+      </table>
+
+      <h3 class="text-sc-blue-dark font-semibold mt-6">Teacher Lounge</h3>
+      <p class="text-slate-600 text-sm">Private discussion space for approved teachers.</p>
+      <a class="sc-btn" href="https://t.me/scholacore_teacher_lounge" target="_blank" rel="noopener">Open Telegram Lounge</a>
+    </div>
+  </main>
+
+  <footer class="text-center text-slate-500 text-sm p-6">
+    <a href="/privacy-policy.html" class="text-sc-blue-dark">Privacy Policy</a> ·
+    <a href="/terms-of-service.html" class="text-sc-blue-dark">Terms of Service</a>
+  </footer>
+
+  <script type="module" src="/src/pages/teacher-portal.ts"></script>
+</body>
+</html>
