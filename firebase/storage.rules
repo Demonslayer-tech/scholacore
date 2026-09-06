@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        firestore.get(/databases/(default)/documents/users/$(uid())).data.role == 'admin';
+    }
+
+    // teacher-verifications/{teacherId}/{fileName}
+    match /teacher-verifications/{teacherId}/{fileName} {
+      allow read: if isAdmin() || (isSignedIn() && uid() == teacherId);
+      allow write: if isSignedIn() && uid() == teacherId
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf|image/.*');
+      allow delete: if isAdmin();
+    }
+
+    // class-materials/{scheduleId}/{fileName}
+    match /class-materials/{scheduleId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.resource.size < 50 * 1024 * 1024;
+      allow delete: if isAdmin();
+    }
+
+    // recordings/{scheduleId}/{fileName} — server (LiveKit Egress) writes only
+    match /recordings/{scheduleId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

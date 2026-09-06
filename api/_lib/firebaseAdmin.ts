@@ -1,38 +1,29 @@
-import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { getAuth, type Auth } from 'firebase-admin/auth';
 
-// Shared across all /api functions. FIREBASE_SERVICE_ACCOUNT_KEY is the
-// full service-account JSON, stored as a single-line Vercel env var.
-// Using the Admin SDK here means these operations bypass firestore.rules
-// entirely — intentional: the webhook and AI-grading endpoints are the
-// ONLY writers for transactions/aiScore/subscription status, so they run
-// with elevated trust the rules explicitly refuse to grant clients.
-let app: App;
+let app: App | undefined;
 
 function getAdminApp(): App {
-  if (getApps().length) {
-    return getApps()[0];
+  if (app) return app;
+  if (getApps().length > 0) {
+    app = getApps()[0];
+    return app;
   }
 
-  const rawKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (!rawKey) {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (!raw) {
     throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_KEY environment variable');
   }
 
-  let serviceAccount: object;
+  let serviceAccount: Record<string, unknown>;
   try {
-    serviceAccount = JSON.parse(rawKey);
+    serviceAccount = JSON.parse(raw);
   } catch {
-    throw new Error(
-      'FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON. Re-paste the full service account JSON (Firebase Console → Project Settings → Service Accounts → Generate new private key) as a single line, with no extra quotes added around it.'
-    );
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON');
   }
 
-  app = initializeApp({
-    credential: cert(serviceAccount)
-  });
-
+  app = initializeApp({ credential: cert(serviceAccount as any) });
   return app;
 }
 
