@@ -1,7 +1,7 @@
 # ScholaCore
 
 Online school platform running natively inside the Telegram ecosystem, plus
-a normal web fallback. Rebuilt from a clean slate — see `firebase/schema.md`
+a normal web fallback. Rebuilt from a clean slate; see `firebase/schema.md`
 for the data model and `firebase/firestore.rules` / `firebase/storage.rules`
 for the (single, authoritative) security rules.
 
@@ -16,7 +16,7 @@ for the (single, authoritative) security rules.
 - Ecosystem: Telegram Bot API + Telegram Mini Apps.
 
 ## Roles
-`student` | `teacher` | `admin` — this is the only role model in the repo.
+`student` | `teacher` | `admin`. This is the only role model in the repo.
 If you see `parent`, `bursar`, `principal`, `developer`, or `pending_teacher`
 referenced anywhere, that's leftover from a scrapped earlier version and
 should be removed.
@@ -25,7 +25,7 @@ should be removed.
 Copy `.env.example` to `.env.local` and fill in real values. Anything meant
 to run in the browser (Paystack public key, LiveKit ws URL, Firebase web
 config) MUST be prefixed `VITE_` or Vite will not include it in the client
-bundle — this bit us in a previous version, don't repeat it.
+bundle. This bit us in a previous version, don't repeat it.
 
 ## Deploying Firestore/Storage rules
 `firebase.json` points the Firebase CLI at `firebase/firestore.rules` and
@@ -52,5 +52,5 @@ firebase deploy --only firestore:rules,storage
    idempotency, marks the student `paymentStatus: active_paid`, then
    creates a single-use Telegram invite link and DMs it to the student.
 4. Telegram delivery failures are logged to `webhook_events` but never
-   undo or block the student's paid status — payment and invite delivery
+   undo or block the student's paid status; payment and invite delivery
    are decoupled on purpose.

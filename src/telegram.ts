@@ -20,7 +20,7 @@ declare global {
 
 /**
  * Bootstraps the Telegram Mini App SDK if present. Safe to call when the
- * page is opened in a normal browser (outside Telegram) — it simply does
+ * page is opened in a normal browser (outside Telegram); it simply does
  * nothing rather than throwing, which was a real crash in the v1 app.
  */
 export function initTelegramWebApp(): TelegramWebAppUser | null {

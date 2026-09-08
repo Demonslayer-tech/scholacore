@@ -66,7 +66,7 @@ async function loadApplications(): Promise<void> {
       <td>${d.fullName}<br><span class="text-slate-400 text-xs">${d.email}</span></td>
       <td>${d.subjectSpecializations.join(', ')}</td>
       <td>${d.credentialsSummary}</td>
-      <td>${docsLinks || '—'}</td>
+      <td>${docsLinks || 'None uploaded'}</td>
       <td>${badgeFor(d.status)}</td>
       <td>
         <button class="sc-btn sc-btn--secondary inline-block w-auto m-0 mr-1 px-2.5 py-1.5" data-approve="${docSnap.id}">Approve</button>

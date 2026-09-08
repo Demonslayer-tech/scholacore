@@ -77,7 +77,7 @@ payBtn.addEventListener('click', () => {
     metadata: { studentUid: currentUid },
     callback: () => {
       // The Paystack webhook (server-side, api/paystack-webhook.ts) is the
-      // source of truth for marking the student as paid — this callback
+      // source of truth for marking the student as paid; this callback
       // only tells the student their payment went through; it does not
       // itself grant access or wait for the webhook to complete.
       showAlert(

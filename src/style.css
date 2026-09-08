@@ -36,7 +36,7 @@ body {
     @apply bg-green-50 text-green-700 border border-green-300;
   }
   .sc-badge {
-    @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    @apply inline-block px-2.5 py-0.5 rounded-md text-xs font-semibold;
   }
   .sc-badge--pending { @apply bg-yellow-100 text-yellow-800; }
   .sc-badge--approved { @apply bg-green-100 text-green-800; }
