@@ -39,6 +39,18 @@ firebase deploy --only firestore:rules,storage
   project scaffold.
 - **Phase 2 (done):** Student/teacher auth pages, teacher vetting form,
   teacher portal, admin dashboard, privacy/terms pages.
-- **Phase 3 (next):** Paystack webhook + Telegram invite automation.
-- **Phase 4:** Groq AI Library, LiveKit classroom + Egress recording,
-  scheduled class reminders.
+- **Phase 3 (done):** Paystack payment page (`pay.html`), HMAC-verified
+  idempotent webhook, single-use Telegram invite delivery, webhook
+  fallback logging.
+- **Phase 4 (next):** Groq AI Library, LiveKit classroom + Egress
+  recording, scheduled class reminders.
+
+## Payment flow (Phase 3)
+1. Student signs in, goes to `pay.html`, pays via Paystack Inline JS.
+2. Paystack calls `POST /api/paystack-webhook` (HMAC-signed).
+3. Webhook verifies the signature, checks `transactions/{reference}` for
+   idempotency, marks the student `paymentStatus: active_paid`, then
+   creates a single-use Telegram invite link and DMs it to the student.
+4. Telegram delivery failures are logged to `webhook_events` but never
+   undo or block the student's paid status — payment and invite delivery
+   are decoupled on purpose.

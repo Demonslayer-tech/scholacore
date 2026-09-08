@@ -13,6 +13,7 @@ export default defineConfig({
         teacherVetting: resolve(__dirname, 'teacher-vetting.html'),
         teacherPortal: resolve(__dirname, 'teacher-portal.html'),
         adminDashboard: resolve(__dirname, 'admin-dashboard.html'),
+        pay: resolve(__dirname, 'pay.html'),
         privacyPolicy: resolve(__dirname, 'privacy-policy.html'),
         termsOfService: resolve(__dirname, 'terms-of-service.html')
       }

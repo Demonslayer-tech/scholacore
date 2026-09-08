@@ -48,7 +48,7 @@ signupForm.addEventListener('submit', async (e) => {
     };
     await setDoc(doc(db, 'users', cred.user.uid), userDoc);
     showAlert(alertEl, 'Account created. Redirecting…', 'success');
-    window.location.href = '/index.html';
+    window.location.href = '/pay.html';
   } catch (err) {
     showAlert(alertEl, err instanceof Error ? err.message : 'Sign-up failed', 'error');
   }
@@ -60,7 +60,7 @@ loginForm.addEventListener('submit', async (e) => {
   const password = el<HTMLInputElement>('loginPassword').value;
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    window.location.href = '/index.html';
+    window.location.href = '/pay.html';
   } catch (err) {
     showAlert(alertEl, err instanceof Error ? err.message : 'Log in failed', 'error');
   }

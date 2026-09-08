@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScholaCore — Pay Tuition</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <header class="bg-white border-b-2 border-sc-blue px-6 py-4">
+    <span class="text-sc-blue-dark font-bold text-xl">ScholaCore</span>
+  </header>
+
+  <main>
+    <div class="sc-card" id="pay-card">
+      <h1 class="text-xl font-bold text-sc-blue-dark mb-1">Tuition / Bursary Payment</h1>
+      <p class="text-slate-600 text-sm">Complete your payment to receive your class group invite automatically.</p>
+
+      <label class="sc-label" for="amount">Amount (₦)</label>
+      <input class="sc-input" id="amount" type="number" min="500" step="1" value="5000" required />
+
+      <button class="sc-btn" id="pay-btn">Pay with Paystack</button>
+      <div id="alert" class="sc-alert"></div>
+    </div>
+
+    <div class="sc-card hidden" id="login-required-card">
+      <p class="text-slate-600">Please <a href="/student-signup.html" class="text-sc-blue-dark underline">sign in</a> before making a payment.</p>
+    </div>
+  </main>
+
+  <footer class="text-center text-slate-500 text-sm p-6">
+    <a href="/privacy-policy.html" class="text-sc-blue-dark">Privacy Policy</a> ·
+    <a href="/terms-of-service.html" class="text-sc-blue-dark">Terms of Service</a>
+  </footer>
+
+  <script type="module" src="/src/pages/pay.ts"></script>
+</body>
+</html>
