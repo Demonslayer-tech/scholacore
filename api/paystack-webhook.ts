@@ -80,7 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const { reference, amount, customer, metadata } = event.data;
+  const { reference, amount, metadata } = event.data;
   const studentUid = metadata?.studentUid;
 
   if (!studentUid) {
