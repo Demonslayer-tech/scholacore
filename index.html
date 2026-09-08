@@ -8,13 +8,29 @@
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
-  <div class="sc-card">
-    <h1 class="text-xl font-bold text-sc-blue-dark">ScholaCore</h1>
-    <p class="text-slate-600 mt-2">
-      Phase 1 scaffold is live. Student sign-up, teacher vetting, the
-      teacher portal, and the admin dashboard land in Phase 2.
-    </p>
-  </div>
+  <header class="bg-white border-b-2 border-sc-blue px-6 py-4">
+    <span class="text-sc-blue-dark font-bold text-xl">ScholaCore</span>
+  </header>
+
+  <main>
+    <div class="sc-card sc-card--wide">
+      <h1 class="text-xl font-bold text-sc-blue-dark mb-1">Welcome to ScholaCore</h1>
+      <p class="text-slate-600 mb-4">Choose where you'd like to go.</p>
+
+      <div class="grid gap-3">
+        <a href="/student-signup.html" class="sc-btn">I'm a Student</a>
+        <a href="/teacher-vetting.html" class="sc-btn sc-btn--secondary">Apply as a Teacher</a>
+        <a href="/teacher-portal.html" class="sc-btn sc-btn--secondary">Teacher Portal (already approved)</a>
+        <a href="/admin-dashboard.html" class="sc-btn sc-btn--secondary">Admin Dashboard</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center text-slate-500 text-sm p-6">
+    <a href="/privacy-policy.html" class="text-sc-blue-dark">Privacy Policy</a> ·
+    <a href="/terms-of-service.html" class="text-sc-blue-dark">Terms of Service</a>
+  </footer>
+
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
