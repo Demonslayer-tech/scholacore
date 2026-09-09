@@ -1,5 +1,4 @@
-node_modules/
-dist/
+vendor/
 .env
 .env.local
 .vercel/

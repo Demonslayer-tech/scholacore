@@ -4,16 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ScholaCore: Admin Dashboard</title>
-  <link rel="stylesheet" href="/src/style.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
-  <header class="bg-white border-b-2 border-sc-blue px-6 py-4">
-    <span class="text-sc-blue-dark font-bold text-xl">ScholaCore: Admin</span>
+  <header class="sc-header">
+    <span class="sc-header__title">ScholaCore: Admin</span>
   </header>
 
   <main>
     <div class="sc-card" id="login-card">
-      <h1 class="text-lg font-bold text-sc-blue-dark mb-1">Admin Login</h1>
+      <h1 class="text-lg font-bold" style="color:#0F52BA;">Admin Login</h1>
       <form id="login-form">
         <label class="sc-label" for="email">Email</label>
         <input class="sc-input" id="email" type="email" required />
@@ -25,23 +26,23 @@
     </div>
 
     <div class="sc-card sc-card--wide hidden" id="dashboard-card">
-      <h2 class="text-lg font-bold text-sc-blue-dark mb-1">Pending Teacher Applications</h2>
+      <h2 class="text-lg font-bold" style="color:#0F52BA;">Pending Teacher Applications</h2>
       <p class="text-slate-600 text-sm">Review credentials and approve or reject each applicant.</p>
 
       <table class="sc-table">
         <thead>
           <tr><th>Name</th><th>Subjects</th><th>Credentials</th><th>Documents</th><th>Status</th><th>Action</th></tr>
         </thead>
-        <tbody id="applications-body"><tr><td colspan="6">Loading…</td></tr></tbody>
+        <tbody id="applications-body"><tr><td colspan="6">Loading...</td></tr></tbody>
       </table>
     </div>
   </main>
 
-  <footer class="text-center text-slate-500 text-sm p-6">
-    <a href="/privacy-policy.html" class="text-sc-blue-dark">Privacy Policy</a> ·
-    <a href="/terms-of-service.html" class="text-sc-blue-dark">Terms of Service</a>
+  <footer class="sc-footer">
+    <a href="/privacy-policy.html">Privacy Policy</a> ·
+    <a href="/terms-of-service.html">Terms of Service</a>
   </footer>
 
-  <script type="module" src="/src/pages/admin-dashboard.ts"></script>
+  <script type="module" src="/assets/js/pages/admin-dashboard.js"></script>
 </body>
 </html>

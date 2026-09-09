@@ -1,56 +1,63 @@
 # ScholaCore
 
 Online school platform running natively inside the Telegram ecosystem, plus
-a normal web fallback. Rebuilt from a clean slate; see `firebase/schema.md`
-for the data model and `firebase/firestore.rules` / `firebase/storage.rules`
-for the (single, authoritative) security rules.
+a normal web fallback. See `firebase/schema.md` for the data model and
+`firebase/firestore.rules` / `firebase/storage.rules` for the single,
+authoritative security rules.
 
 ## Stack
-- Frontend: Vite + TypeScript + Tailwind CSS, vanilla (no framework),
-  deployed as static pages to Vercel.
-- Backend: Node serverless functions under `api/`, on Vercel.
-- Data: Firebase Firestore + Storage + Auth.
-- Live classes: LiveKit (+ Egress for recordings).
-- AI Library: Groq API.
-- Payments: Paystack.
+- Frontend: plain HTML, CSS, and JavaScript. No build step, no bundler,
+  no TypeScript. Pages load Firebase directly from Google's CDN via
+  native ES module `<script type="module">` imports. Tailwind is loaded
+  via its CDN script (`cdn.tailwindcss.com`) for the same reason.
+- Backend: PHP serverless functions under `api/`, on Vercel via the
+  community `vercel-php` runtime (`vercel-community/php`). Vercel has no
+  official first-party PHP runtime.
+- Data: Firebase Firestore + Storage + Auth, accessed server-side from
+  PHP via the community `kreait/firebase-php` SDK (there is no official
+  Google Firebase Admin SDK for PHP).
+- Live classes: LiveKit (+ Egress for recordings); not yet wired up.
+- AI Library: Groq API; not yet wired up.
+- Payments: Paystack, via Inline JS on the client and a PHP webhook.
 - Ecosystem: Telegram Bot API + Telegram Mini Apps.
 
 ## Roles
 `student` | `teacher` | `admin`. This is the only role model in the repo.
-If you see `parent`, `bursar`, `principal`, `developer`, or `pending_teacher`
-referenced anywhere, that's leftover from a scrapped earlier version and
-should be removed.
 
 ## Environment variables
-Copy `.env.example` to `.env.local` and fill in real values. Anything meant
-to run in the browser (Paystack public key, LiveKit ws URL, Firebase web
-config) MUST be prefixed `VITE_` or Vite will not include it in the client
-bundle. This bit us in a previous version, don't repeat it.
+Copy `.env.example` and fill in real values in Vercel's Environment
+Variables settings. Because there's no build step, client-facing config
+(Firebase web config, Paystack public key) is served at request time by
+`api/firebase-config.php` and `api/paystack-config.php`, which read
+`getenv()` and emit it as a JS module; nothing is hardcoded into a
+static committed file.
+
+## PHP dependencies
+Run `composer install` before deploying so `vendor/` exists (or let
+Vercel's build step run it; `vercel-php` supports Composer natively).
 
 ## Deploying Firestore/Storage rules
-`firebase.json` points the Firebase CLI at `firebase/firestore.rules` and
-`firebase/storage.rules`. Deploy with:
 ```
 firebase deploy --only firestore:rules,storage
 ```
+(requires `firebase.json` pointing at `firebase/firestore.rules` and
+`firebase/storage.rules`; not included in this stack switch since it's
+Firebase CLI config, unrelated to the frontend/backend language.)
+
+## Payment flow
+1. Student signs in, goes to `pay.html`, pays via Paystack Inline JS.
+2. Paystack calls `POST /api/paystack-webhook.php` (HMAC-signed).
+3. The PHP webhook verifies the signature, checks `transactions/{reference}`
+   for idempotency, marks the student `paymentStatus: active_paid`, then
+   creates a single-use Telegram invite link (`createChatInviteLink` with
+   `member_limit: 1`, not `exportChatInviteLink`, which can't be
+   single-use) and DMs it to the student.
+4. Telegram delivery failures are logged to `webhook_events` but never
+   undo or block the student's paid status.
 
 ## Build status
-- **Phase 1 (done):** Firestore schema, security rules, `.env.example`,
-  project scaffold.
-- **Phase 2 (done):** Student/teacher auth pages, teacher vetting form,
-  teacher portal, admin dashboard, privacy/terms pages.
-- **Phase 3 (done):** Paystack payment page (`pay.html`), HMAC-verified
-  idempotent webhook, single-use Telegram invite delivery, webhook
-  fallback logging.
-- **Phase 4 (next):** Groq AI Library, LiveKit classroom + Egress
-  recording, scheduled class reminders.
-
-## Payment flow (Phase 3)
-1. Student signs in, goes to `pay.html`, pays via Paystack Inline JS.
-2. Paystack calls `POST /api/paystack-webhook` (HMAC-signed).
-3. Webhook verifies the signature, checks `transactions/{reference}` for
-   idempotency, marks the student `paymentStatus: active_paid`, then
-   creates a single-use Telegram invite link and DMs it to the student.
-4. Telegram delivery failures are logged to `webhook_events` but never
-   undo or block the student's paid status; payment and invite delivery
-   are decoupled on purpose.
+- Homepage, student sign-up, teacher vetting, teacher portal, admin
+  dashboard, payment page, privacy/terms pages: done.
+- Paystack webhook + Telegram invite delivery: done.
+- Not yet built: LiveKit classroom + Egress recording, Groq AI Library,
+  scheduled Telegram class reminders.

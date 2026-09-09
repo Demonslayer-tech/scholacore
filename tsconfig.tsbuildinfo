@@ -1,0 +1,1 @@
+{"root":["./src/firebase.ts","./src/main.ts","./src/telegram.ts","./src/types.ts","./src/pages/admin-dashboard.ts","./src/pages/student-signup.ts","./src/pages/teacher-portal.ts","./src/pages/teacher-vetting.ts","./api/_lib/firebaseadmin.ts"],"version":"5.9.3"}

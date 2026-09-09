@@ -1,4 +1,4 @@
-# ScholaCore — Firestore Schema
+# ScholaCore: Firestore Schema
 
 ## `users/{uid}`
 | Field | Type | Notes |

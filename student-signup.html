@@ -5,16 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ScholaCore: Student Sign Up</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="/src/style.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
-  <header class="bg-white border-b-2 border-sc-blue px-6 py-4">
-    <span class="text-sc-blue-dark font-bold text-xl">ScholaCore</span>
+  <header class="sc-header">
+    <span class="sc-header__title">ScholaCore</span>
   </header>
 
   <main>
     <div class="sc-card">
-      <h1 class="text-xl font-bold text-sc-blue-dark mb-1">Student Account</h1>
+      <h1 class="text-xl font-bold" style="color:#0F52BA;">Student Account</h1>
       <p class="text-slate-600 text-sm">Sign up or log in to access your classes.</p>
 
       <form id="signup-form">
@@ -40,7 +41,7 @@
       <div id="alert" class="sc-alert"></div>
 
       <p class="text-center mt-4 text-sm">
-        Already have an account? <a href="#" id="show-login" class="text-sc-blue-dark underline">Log in</a>
+        Already have an account? <a href="#" id="show-login" style="color:#0F52BA;">Log in</a>
       </p>
 
       <form id="login-form" class="hidden">
@@ -53,11 +54,11 @@
     </div>
   </main>
 
-  <footer class="text-center text-slate-500 text-sm p-6">
-    <a href="/privacy-policy.html" class="text-sc-blue-dark">Privacy Policy</a> ·
-    <a href="/terms-of-service.html" class="text-sc-blue-dark">Terms of Service</a>
+  <footer class="sc-footer">
+    <a href="/privacy-policy.html">Privacy Policy</a> ·
+    <a href="/terms-of-service.html">Terms of Service</a>
   </footer>
 
-  <script type="module" src="/src/pages/student-signup.ts"></script>
+  <script type="module" src="/assets/js/pages/student-signup.js"></script>
 </body>
 </html>

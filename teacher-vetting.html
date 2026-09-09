@@ -5,16 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ScholaCore: Teacher Vetting Application</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="/src/style.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
-  <header class="bg-white border-b-2 border-sc-blue px-6 py-4">
-    <span class="text-sc-blue-dark font-bold text-xl">ScholaCore</span>
+  <header class="sc-header">
+    <span class="sc-header__title">ScholaCore</span>
   </header>
 
   <main>
     <div class="sc-card">
-      <h1 class="text-xl font-bold text-sc-blue-dark mb-1">Teacher Vetting Application</h1>
+      <h1 class="text-xl font-bold" style="color:#0F52BA;">Teacher Vetting Application</h1>
       <p class="text-slate-600 text-sm">Submit your credentials for review by our admissions team.</p>
 
       <form id="vetting-form">
@@ -43,11 +44,11 @@
     </div>
   </main>
 
-  <footer class="text-center text-slate-500 text-sm p-6">
-    <a href="/privacy-policy.html" class="text-sc-blue-dark">Privacy Policy</a> ·
-    <a href="/terms-of-service.html" class="text-sc-blue-dark">Terms of Service</a>
+  <footer class="sc-footer">
+    <a href="/privacy-policy.html">Privacy Policy</a> ·
+    <a href="/terms-of-service.html">Terms of Service</a>
   </footer>
 
-  <script type="module" src="/src/pages/teacher-vetting.ts"></script>
+  <script type="module" src="/assets/js/pages/teacher-vetting.js"></script>
 </body>
 </html>
