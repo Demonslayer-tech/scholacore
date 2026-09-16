@@ -6,16 +6,18 @@
   <title>ScholaCore: Teacher Portal</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="/assets/images/scholacore-emblem.png" />
   <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
   <header class="sc-header">
-    <span class="sc-header__title">ScholaCore: Teacher Portal</span>
+    <img src="/assets/images/scholacore-wordmark.png" alt="ScholaCore" class="sc-header__logo" />
+    <span class="sc-header__title" style="margin-left:0.6rem;font-size:1rem;">Teacher Portal</span>
   </header>
 
   <main>
     <div class="sc-card" id="login-card">
-      <h1 class="text-lg font-bold" style="color:#0F52BA;">Teacher Login</h1>
+      <h1 class="text-lg font-bold" style="color:#ffffff;">Teacher Login</h1>
       <form id="login-form">
         <label class="sc-label" for="email">Email</label>
         <input class="sc-input" id="email" type="email" required />
@@ -27,33 +29,33 @@
     </div>
 
     <div class="sc-card hidden" id="pending-card">
-      <h2 class="text-lg font-bold" style="color:#0F52BA;">Application Under Review</h2>
-      <p class="text-slate-600">Your teacher application is
+      <h2 class="text-lg font-bold" style="color:#ffffff;">Application Under Review</h2>
+      <p class="text-slate-200">Your teacher application is
         <span class="sc-badge sc-badge--pending">pending vetting</span>.
         You'll get access to the portal once an admin approves it.
       </p>
     </div>
 
     <div class="sc-card hidden" id="rejected-card">
-      <h2 class="text-lg font-bold" style="color:#0F52BA;">Application Not Approved</h2>
-      <p class="text-slate-600">Your application was
+      <h2 class="text-lg font-bold" style="color:#ffffff;">Application Not Approved</h2>
+      <p class="text-slate-200">Your application was
         <span class="sc-badge sc-badge--rejected">rejected</span>.
         Contact the school office for details.
       </p>
     </div>
 
     <div class="sc-card sc-card--wide hidden" id="portal-card">
-      <h2 class="text-lg font-bold" style="color:#0F52BA;">Welcome, <span id="teacher-name"></span></h2>
-      <p class="text-slate-600 text-sm">Status: <span class="sc-badge sc-badge--approved">approved</span></p>
+      <h2 class="text-lg font-bold" style="color:#ffffff;">Welcome, <span id="teacher-name"></span></h2>
+      <p class="text-slate-200 text-sm">Status: <span class="sc-badge sc-badge--approved">approved</span></p>
 
-      <h3 class="font-semibold mt-6" style="color:#0F52BA;">My Schedule</h3>
+      <h3 class="font-semibold mt-6" style="color:#ffffff;">My Schedule</h3>
       <table class="sc-table">
         <thead><tr><th>Subject</th><th>Start</th><th>End</th><th>Action</th></tr></thead>
         <tbody id="schedule-body"><tr><td colspan="4">Loading...</td></tr></tbody>
       </table>
 
-      <h3 class="font-semibold mt-6" style="color:#0F52BA;">Teacher Lounge</h3>
-      <p class="text-slate-600 text-sm">Private discussion space for approved teachers.</p>
+      <h3 class="font-semibold mt-6" style="color:#ffffff;">Teacher Lounge</h3>
+      <p class="text-slate-200 text-sm">Private discussion space for approved teachers.</p>
       <a class="sc-btn" href="https://t.me/scholacore_teacher_lounge" target="_blank" rel="noopener">Open Telegram Lounge</a>
     </div>
   </main>

@@ -1,86 +1,136 @@
-/* Loaded after the Tailwind CDN script. Tailwind's CDN build can't process
-   @apply, so these are the same component styles written as plain CSS
-   instead of Tailwind's @apply shorthand. */
+/* ScholaCore — Navy Glassmorphism design system (v3)
+   Loaded after the Tailwind CDN script. Tailwind's CDN build can't process
+   @apply, so these are plain CSS component styles. Class names are kept
+   identical to the previous theme so every page picks this up with no
+   markup changes. */
 
-body {
-  background: #F8FAFC;
-  font-family: Georgia, 'Times New Roman', serif;
-  color: #0F172A;
-  margin: 0;
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
 }
 
+body {
+  background: #081b32 url('/assets/images/scholacore-bg.png') center / 480px repeat;
+  font-family: "Roboto", sans-serif;
+  color: #ffffff;
+  margin: 0;
+  min-height: 100vh;
+}
+
+main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+/* Glassmorphism card, replaces the old flat white card */
 .sc-card {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  padding: 24px;
+  background: linear-gradient(to right bottom, #081b3286, #081b326a);
+  backdrop-filter: blur(0.2rem);
+  -webkit-backdrop-filter: blur(0.2rem);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 1.5rem;
+  padding: 2.5rem 2rem;
   max-width: 480px;
+  width: 100%;
   margin: 40px auto;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 .sc-card--wide {
   max-width: 860px;
 }
 
+.sc-card h1 {
+  font-family: "Roboto", sans-serif;
+  font-weight: 600;
+  font-size: 1.3rem;
+  color: #ffffff;
+  margin: 0 0 0.5rem;
+}
+
+.sc-card p {
+  color: #dbe4f0;
+}
+
 .sc-label {
   display: block;
+  text-align: left;
   font-size: 0.875rem;
   font-weight: 600;
   margin-top: 16px;
   margin-bottom: 4px;
+  color: #eaf0f8;
 }
 
 .sc-input,
 .sc-select {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #E2E8F0;
-  border-radius: 6px;
-  font-size: 1rem;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: 0.8rem;
+  font-size: 0.95rem;
   font-family: inherit;
-  background: #FFFFFF;
-  color: #0F172A;
-  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.9);
+  color: #222;
+}
+
+.sc-input::placeholder {
+  color: #666;
 }
 
 .sc-input:focus,
 .sc-select:focus {
   outline: none;
-  border-color: #1E40AF;
-  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+  background: #ffffff;
+  border-color: #1cc535;
+  box-shadow: 0 0 10px rgb(0, 128, 17);
 }
 
 .sc-btn {
   display: block;
   width: 100%;
   margin-top: 24px;
-  padding: 12px 16px;
-  background: #0F52BA;
-  color: #FFFFFF;
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  color: #081b32;
   border: none;
-  border-radius: 6px;
-  font-size: 1rem;
+  border-radius: 0.8rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   text-align: center;
   text-decoration: none;
-  box-sizing: border-box;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease;
 }
 
 .sc-btn:hover {
-  background: #1E40AF;
+  background: #144178;
+  color: #ffffff;
+  transform: translateY(-2px);
 }
 
 .sc-btn:disabled {
   background: #94A3B8;
+  color: #fff;
   cursor: not-allowed;
+  transform: none;
 }
 
 .sc-btn--secondary {
-  background: #FFFFFF;
-  color: #0F52BA;
-  border: 1px solid #0F52BA;
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: none;
+}
+
+.sc-btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 .sc-btn--inline {
@@ -93,21 +143,23 @@ body {
 .sc-alert {
   margin-top: 16px;
   padding: 10px 12px;
-  border-radius: 6px;
+  border-radius: 0.6rem;
   font-size: 0.875rem;
   display: none;
 }
 
 .sc-alert--error {
-  background: #FEF2F2;
-  color: #B91C1C;
-  border: 1px solid #FCA5A5;
+  background: rgba(220, 38, 38, 0.15);
+  color: #FCA5A5;
+  border: 1px solid rgba(252, 165, 165, 0.4);
+  display: block;
 }
 
 .sc-alert--success {
-  background: #F0FDF4;
-  color: #15803D;
-  border: 1px solid #86EFAC;
+  background: rgba(21, 128, 61, 0.18);
+  color: #86EFAC;
+  border: 1px solid rgba(134, 239, 172, 0.4);
+  display: block;
 }
 
 .sc-badge {
@@ -127,17 +179,18 @@ body {
   border-collapse: collapse;
   margin-top: 16px;
   font-size: 0.9rem;
+  color: #eaf0f8;
 }
 
 .sc-table th,
 .sc-table td {
   text-align: left;
   padding: 10px 12px;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .sc-table th {
-  color: #475569;
+  color: #b7c6dc;
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.75rem;
@@ -146,28 +199,72 @@ body {
 
 .sc-footer {
   text-align: center;
-  color: #475569;
+  color: #b7c6dc;
   font-size: 0.8rem;
   padding: 24px;
 }
 
 .sc-footer a {
-  color: #0F52BA;
+  color: #ffffff;
   text-decoration: none;
 }
 
 .sc-header {
-  background: #FFFFFF;
-  border-bottom: 2px solid #1E40AF;
-  padding: 16px 24px;
+  background: #081b32;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sc-header__title {
-  color: #0F52BA;
+  color: #ffffff;
   font-weight: 700;
   font-size: 1.25rem;
 }
 
+.sc-header__logo {
+  height: 28px;
+  width: auto;
+}
+
+/* Emblem + wordmark block used above form headings */
+.sc-logo-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.sc-logo-header img.sc-emblem {
+  width: 84px;
+  height: auto;
+  margin-bottom: 0.6rem;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+}
+
 .hidden {
   display: none;
+}
+
+@media screen and (max-width: 768px) {
+  .sc-card {
+    padding: 2rem 1.5rem;
+    max-width: 92%;
+    border-radius: 1.2rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  main {
+    padding: 1rem;
+  }
+  .sc-card {
+    padding: 1.8rem 1.2rem;
+  }
+  .sc-input, .sc-btn {
+    padding: 0.8rem;
+    font-size: 0.9rem;
+  }
 }

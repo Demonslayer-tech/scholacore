@@ -5,16 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ScholaCore: Admin Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="/assets/images/scholacore-emblem.png" />
   <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
   <header class="sc-header">
-    <span class="sc-header__title">ScholaCore: Admin</span>
+    <img src="/assets/images/scholacore-wordmark.png" alt="ScholaCore" class="sc-header__logo" />
+    <span class="sc-header__title" style="margin-left:0.6rem;font-size:1rem;">Admin</span>
   </header>
 
   <main>
     <div class="sc-card" id="login-card">
-      <h1 class="text-lg font-bold" style="color:#0F52BA;">Admin Login</h1>
+      <h1 class="text-lg font-bold" style="color:#ffffff;">Admin Login</h1>
       <form id="login-form">
         <label class="sc-label" for="email">Email</label>
         <input class="sc-input" id="email" type="email" required />
@@ -26,8 +28,8 @@
     </div>
 
     <div class="sc-card sc-card--wide hidden" id="dashboard-card">
-      <h2 class="text-lg font-bold" style="color:#0F52BA;">Pending Teacher Applications</h2>
-      <p class="text-slate-600 text-sm">Review credentials and approve or reject each applicant.</p>
+      <h2 class="text-lg font-bold" style="color:#ffffff;">Pending Teacher Applications</h2>
+      <p class="text-slate-200 text-sm">Review credentials and approve or reject each applicant.</p>
 
       <table class="sc-table">
         <thead>

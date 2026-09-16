@@ -6,17 +6,21 @@
   <title>ScholaCore: Student Sign Up</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="/assets/images/scholacore-emblem.png" />
   <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
   <header class="sc-header">
-    <span class="sc-header__title">ScholaCore</span>
+    <img src="/assets/images/scholacore-wordmark.png" alt="ScholaCore" class="sc-header__logo" />
   </header>
 
   <main>
     <div class="sc-card">
-      <h1 class="text-xl font-bold" style="color:#0F52BA;">Student Account</h1>
-      <p class="text-slate-600 text-sm">Sign up or log in to access your classes.</p>
+      <div class="sc-logo-header">
+        <img src="/assets/images/scholacore-emblem.png" alt="ScholaCore" class="sc-emblem" />
+      </div>
+      <h1 class="text-xl font-bold" style="color:#ffffff;">Student Account</h1>
+      <p class="text-slate-200 text-sm">Sign up or log in to access your classes.</p>
 
       <form id="signup-form">
         <label class="sc-label" for="fullName">Full Name</label>
@@ -41,7 +45,7 @@
       <div id="alert" class="sc-alert"></div>
 
       <p class="text-center mt-4 text-sm">
-        Already have an account? <a href="#" id="show-login" style="color:#0F52BA;">Log in</a>
+        Already have an account? <a href="#" id="show-login" style="color:#ffffff;">Log in</a>
       </p>
 
       <form id="login-form" class="hidden">
