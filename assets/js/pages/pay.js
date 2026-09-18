@@ -1,5 +1,4 @@
-import { auth } from '/api/firebase-config.php';
-import { db } from '/api/firebase-config.php';
+import { auth, db } from '/api/firebase-config.php';
 import { PAYSTACK_PUBLIC_KEY } from '/api/paystack-config.php';
 import { initTelegramWebApp, showAlert } from '/assets/js/telegram.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
@@ -20,6 +19,7 @@ function el(id) {
   return found;
 }
 
+const loadingCard = el('loading-card');
 const payCard = el('pay-card');
 const loginRequiredCard = el('login-required-card');
 const classesCard = el('classes-card');
@@ -29,25 +29,32 @@ const alertEl = el('alert');
 let currentUid = null;
 let currentEmail = null;
 
+function showOnly(card) {
+  [loadingCard, payCard, loginRequiredCard, classesCard].forEach((c) => c.classList.add('hidden'));
+  card.classList.remove('hidden');
+}
+
 onAuthStateChanged(auth, async (user) => {
-  if (!user || !user.email) {
-    payCard.classList.add('hidden');
-    classesCard.classList.add('hidden');
-    loginRequiredCard.classList.remove('hidden');
+  if (!user) {
+    showOnly(loginRequiredCard);
     return;
   }
   currentUid = user.uid;
-  currentEmail = user.email;
 
   const userSnap = await getDoc(doc(db, 'users', user.uid));
-  const userData = userSnap.data();
+  const userData = userSnap.data() || {};
 
-  if (userData && userData.paymentStatus === 'active_paid') {
-    payCard.classList.add('hidden');
-    classesCard.classList.remove('hidden');
+  // Telegram sign-in (custom token) doesn't carry an email -- Paystack
+  // still needs one, so fall back to a synthetic address tied to the
+  // account. It's never shown to the student; it's only Paystack's
+  // receipt/lookup field.
+  currentEmail = user.email || userData.email || (user.uid + '@telegram.scholacore.ng');
+
+  if (userData.paymentStatus === 'active_paid') {
+    showOnly(classesCard);
     await loadClasses();
   } else {
-    payCard.classList.remove('hidden');
+    showOnly(payCard);
   }
 });
 

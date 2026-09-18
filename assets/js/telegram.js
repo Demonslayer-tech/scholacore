@@ -22,6 +22,22 @@ export function initTelegramWebApp() {
 }
 
 /**
+ * Returns the raw, signed initData string for server-side verification
+ * (see api/telegram-auth.php). This is different from
+ * initTelegramWebApp()'s return value, which is the convenient but
+ * client-supplied (and therefore unverifiable) initDataUnsafe.user.
+ * @returns {string} empty string when not running inside Telegram
+ */
+export function getTelegramInitData() {
+  try {
+    const webApp = window.Telegram && window.Telegram.WebApp;
+    return (webApp && webApp.initData) || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+/**
  * @param {HTMLElement} el
  * @param {string} message
  * @param {'error' | 'success'} type

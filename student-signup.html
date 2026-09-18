@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ScholaCore: Student Sign Up</title>
+  <title>ScholaCore: Student</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" href="/assets/images/scholacore-emblem.png" />
@@ -15,19 +15,49 @@
   </header>
 
   <main>
-    <div class="sc-card">
+    <!-- Shown first, always -- hidden once we know whether silent sign-in applies. -->
+    <div class="sc-card sc-card--center" id="loading-card">
+      <div class="sc-logo-header">
+        <img src="/assets/images/scholacore-emblem.png" alt="ScholaCore" class="sc-emblem" />
+      </div>
+      <div class="sc-spinner"></div>
+      <p style="margin-top:12px;">Signing you in...</p>
+    </div>
+
+    <!-- New Telegram user, one tap to finish setup -- no typing. -->
+    <div class="sc-card hidden" id="grade-card">
+      <div class="sc-logo-header">
+        <img src="/assets/images/scholacore-emblem.png" alt="ScholaCore" class="sc-emblem" />
+      </div>
+      <h1 class="sc-display" style="text-align:center;font-size:1.3rem;">One more thing</h1>
+      <p style="text-align:center;">What grade are you in?</p>
+      <form id="grade-form">
+        <select class="sc-select" id="gradeLevel" required>
+          <option value="">Select grade</option>
+          <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
+          <option>SSS 1</option><option>SSS 2</option><option>SSS 3</option>
+        </select>
+        <button class="sc-btn" type="submit">Continue</button>
+      </form>
+      <div id="grade-alert" class="sc-alert"></div>
+    </div>
+
+    <!-- Fallback: only shown when the page isn't opened inside Telegram,
+         or Telegram verification failed. -->
+    <div class="sc-card hidden" id="fallback-card">
       <div class="sc-logo-header">
         <img src="/assets/images/scholacore-emblem.png" alt="ScholaCore" class="sc-emblem" />
       </div>
       <h1 class="sc-display" style="text-align:center;font-size:1.4rem;">Student Account</h1>
       <p style="text-align:center;font-size:0.88rem;">Sign up or log in to access your classes.</p>
+      <div id="fallback-alert" class="sc-alert"></div>
 
       <form id="signup-form">
         <label class="sc-label" for="fullName">Full Name</label>
         <input class="sc-input" id="fullName" type="text" required />
 
-        <label class="sc-label" for="gradeLevel">Grade Level</label>
-        <select class="sc-select" id="gradeLevel" required>
+        <label class="sc-label" for="signupGradeLevel">Grade Level</label>
+        <select class="sc-select" id="signupGradeLevel" required>
           <option value="">Select grade</option>
           <option>JSS 1</option><option>JSS 2</option><option>JSS 3</option>
           <option>SSS 1</option><option>SSS 2</option><option>SSS 3</option>
@@ -41,8 +71,6 @@
 
         <button class="sc-btn" type="submit">Create Account</button>
       </form>
-
-      <div id="alert" class="sc-alert"></div>
 
       <p class="text-center mt-4 text-sm">
         Already have an account? <a href="#" id="show-login" style="color:#ffffff;">Log in</a>

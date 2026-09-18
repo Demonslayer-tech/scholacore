@@ -366,7 +366,29 @@ main {
   }
 }
 
-/* Live classroom */
+/* Loading state -- used for the silent-auth handshake, and reusable
+   anywhere else a page needs to show "working on it" before content is
+   ready. */
+.sc-spinner {
+  width: 34px;
+  height: 34px;
+  margin: 8px auto 0;
+  border: 3px solid rgba(255, 255, 255, 0.18);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: sc-spin 0.8s linear infinite;
+}
+
+@keyframes sc-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-spinner {
+    animation-duration: 2s;
+  }
+}
+
 .classroom-main {
   display: block;
   padding: 0;
