@@ -1,7 +1,16 @@
 import { auth } from '/api/firebase-config.php';
+import { db } from '/api/firebase-config.php';
 import { PAYSTACK_PUBLIC_KEY } from '/api/paystack-config.php';
 import { initTelegramWebApp, showAlert } from '/assets/js/telegram.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  orderBy,
+  getDocs
+} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
 initTelegramWebApp();
 
@@ -13,21 +22,57 @@ function el(id) {
 
 const payCard = el('pay-card');
 const loginRequiredCard = el('login-required-card');
+const classesCard = el('classes-card');
 const payBtn = el('pay-btn');
 const alertEl = el('alert');
 
 let currentUid = null;
 let currentEmail = null;
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (!user || !user.email) {
     payCard.classList.add('hidden');
+    classesCard.classList.add('hidden');
     loginRequiredCard.classList.remove('hidden');
     return;
   }
   currentUid = user.uid;
   currentEmail = user.email;
+
+  const userSnap = await getDoc(doc(db, 'users', user.uid));
+  const userData = userSnap.data();
+
+  if (userData && userData.paymentStatus === 'active_paid') {
+    payCard.classList.add('hidden');
+    classesCard.classList.remove('hidden');
+    await loadClasses();
+  } else {
+    payCard.classList.remove('hidden');
+  }
 });
+
+async function loadClasses() {
+  const body = el('classes-body');
+  const schedulesQuery = query(collection(db, 'schedules'), orderBy('startTime', 'asc'));
+  const snap = await getDocs(schedulesQuery);
+
+  if (snap.empty) {
+    body.innerHTML = "<tr><td colspan='4'>No classes scheduled yet.</td></tr>";
+    return;
+  }
+
+  body.innerHTML = '';
+  snap.forEach((docSnap) => {
+    const d = docSnap.data();
+    const row = document.createElement('tr');
+    row.innerHTML =
+      '<td>' + d.subjectName + '</td>' +
+      '<td>' + d.startTime.toDate().toLocaleString() + '</td>' +
+      '<td>' + d.endTime.toDate().toLocaleString() + '</td>' +
+      '<td><a href="/classroom.html?schedule=' + docSnap.id + '" class="sc-btn sc-btn--secondary sc-btn--inline">Join Class</a></td>';
+    body.appendChild(row);
+  });
+}
 
 payBtn.addEventListener('click', () => {
   if (!currentUid || !currentEmail) {

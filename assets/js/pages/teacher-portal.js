@@ -76,16 +76,20 @@ onAuthStateChanged(auth, async (user) => {
   const scheduleSnap = await getDocs(scheduleQuery);
 
   if (scheduleSnap.empty) {
-    scheduleBody.innerHTML = "<tr><td colspan='4'>No classes scheduled yet.</td></tr>";
+    scheduleBody.innerHTML = "<tr><td colspan='5'>No classes scheduled yet.</td></tr>";
   } else {
     scheduleBody.innerHTML = '';
     scheduleSnap.forEach((docSnap) => {
       const d = docSnap.data();
+      const recordingCell = d.recordingUrl
+        ? '<a href="' + d.recordingUrl + '" target="_blank" rel="noopener" style="color:#C9A227;text-decoration:underline;">View</a>'
+        : (d.recordingStatus || '&mdash;');
       const row = document.createElement('tr');
       row.innerHTML =
         '<td>' + d.subjectName + '</td>' +
         '<td>' + d.startTime.toDate().toLocaleString() + '</td>' +
         '<td>' + d.endTime.toDate().toLocaleString() + '</td>' +
+        '<td>' + recordingCell + '</td>' +
         '<td><a href="/classroom.html?schedule=' + docSnap.id + '" class="sc-btn sc-btn--secondary sc-btn--inline">Start Class</a></td>';
       scheduleBody.appendChild(row);
     });

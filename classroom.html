@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScholaCore: Classroom</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="/assets/images/scholacore-emblem.png" />
+  <link rel="stylesheet" href="/assets/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.5.7/dist/livekit-client.umd.min.js"></script>
+</head>
+<body class="classroom-body">
+  <header class="sc-header">
+    <img src="/assets/images/scholacore-wordmark.png" alt="ScholaCore" class="sc-header__logo" />
+    <span class="sc-header__title" style="margin-left:0.6rem;font-size:1rem;" id="class-title">Classroom</span>
+  </header>
+
+  <main class="classroom-main">
+    <div id="login-required-card" class="sc-card hidden">
+      <div class="sc-logo-header">
+        <img src="/assets/images/scholacore-emblem.png" alt="ScholaCore" class="sc-emblem" />
+      </div>
+      <h1 class="sc-display" style="text-align:center;font-size:1.3rem;">Please log in</h1>
+      <p style="text-align:center;">Sign in from the student or teacher portal to join this class.</p>
+    </div>
+
+    <div id="error-card" class="sc-card hidden">
+      <h1 class="sc-display" style="font-size:1.2rem;">Can't join this class</h1>
+      <p id="error-message"></p>
+    </div>
+
+    <div id="room-view" class="classroom-room hidden">
+      <div id="video-grid" class="classroom-grid"></div>
+
+      <div class="classroom-controls">
+        <button id="toggle-mic" class="sc-btn sc-btn--secondary sc-btn--inline" type="button">Mute</button>
+        <button id="toggle-cam" class="sc-btn sc-btn--secondary sc-btn--inline" type="button">Stop Video</button>
+        <button id="toggle-record" class="sc-btn sc-btn--secondary sc-btn--inline hidden" type="button">Start Recording</button>
+        <button id="leave-room" class="sc-btn sc-btn--inline" type="button" style="background:#F87171;color:#1A0000;">Leave</button>
+        <span id="record-status" class="sc-badge hidden"></span>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="/assets/js/pages/classroom.js"></script>
+</body>
+</html>

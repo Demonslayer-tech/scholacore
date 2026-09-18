@@ -33,6 +33,15 @@
     <div class="sc-card hidden" id="login-required-card">
       <p class="text-slate-200">Please <a href="/student-signup.html" style="color:#ffffff;text-decoration:underline;">sign in</a> before making a payment.</p>
     </div>
+
+    <div class="sc-card sc-card--wide hidden" id="classes-card">
+      <h1 class="sc-display" style="font-size:1.3rem;">Your Classes</h1>
+      <p class="text-slate-200 text-sm">Payment confirmed. Join a live class below when it starts.</p>
+      <table class="sc-table">
+        <thead><tr><th>Subject</th><th>Start</th><th>End</th><th>Action</th></tr></thead>
+        <tbody id="classes-body"><tr><td colspan="4">Loading...</td></tr></tbody>
+      </table>
+    </div>
   </main>
 
   <footer class="sc-footer">

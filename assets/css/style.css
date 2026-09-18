@@ -365,3 +365,73 @@ main {
     transition: none;
   }
 }
+
+/* Live classroom */
+.classroom-main {
+  display: block;
+  padding: 0;
+  min-height: calc(100vh - 60px);
+}
+
+.classroom-main .sc-card {
+  margin: 60px auto;
+}
+
+.classroom-room {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 60px);
+  padding: 16px;
+}
+
+.classroom-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.classroom-tile {
+  position: relative;
+  background: var(--navy-deep);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.classroom-tile video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.classroom-tile__label {
+  position: absolute;
+  bottom: 8px;
+  left: 10px;
+  background: rgba(7, 21, 39, 0.7);
+  color: var(--ink);
+  font-size: 0.75rem;
+  padding: 3px 9px;
+  border-radius: 20px;
+  z-index: 1;
+}
+
+.classroom-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 16px 0 4px;
+}
+
+.classroom-controls .sc-btn--inline {
+  margin: 0;
+}
+

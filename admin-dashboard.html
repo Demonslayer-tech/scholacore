@@ -40,6 +40,35 @@
         </thead>
         <tbody id="applications-body"><tr><td colspan="6">Loading...</td></tr></tbody>
       </table>
+
+      <h2 class="text-lg font-bold" style="color:#ffffff;margin-top:32px;">Schedule a Class</h2>
+      <p class="text-slate-200 text-sm">Create a live classroom session for an approved teacher.</p>
+
+      <form id="schedule-form">
+        <label class="sc-label" for="scheduleSubject">Subject</label>
+        <input class="sc-input" id="scheduleSubject" type="text" required />
+
+        <label class="sc-label" for="scheduleTeacher">Teacher</label>
+        <select class="sc-select" id="scheduleTeacher" required>
+          <option value="">Loading approved teachers...</option>
+        </select>
+
+        <label class="sc-label" for="scheduleStart">Start Time</label>
+        <input class="sc-input" id="scheduleStart" type="datetime-local" required />
+
+        <label class="sc-label" for="scheduleEnd">End Time</label>
+        <input class="sc-input" id="scheduleEnd" type="datetime-local" required />
+
+        <button class="sc-btn" type="submit">Create Class</button>
+      </form>
+      <div id="schedule-alert" class="sc-alert"></div>
+
+      <table class="sc-table">
+        <thead>
+          <tr><th>Subject</th><th>Teacher</th><th>Start</th><th>Status</th><th>Recording</th></tr>
+        </thead>
+        <tbody id="schedules-body"><tr><td colspan="5">Loading...</td></tr></tbody>
+      </table>
     </div>
   </main>
 
