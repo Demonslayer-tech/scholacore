@@ -39,7 +39,14 @@
     </div>
 
     <div class="sc-card hidden" id="login-required-card">
-      <p class="text-slate-200">Please <a href="/student-signup.html" style="color:#ffffff;text-decoration:underline;">sign in</a> before making a payment.</p>
+      <p class="text-slate-200">Please <a href="/student-login.html" style="color:#ffffff;text-decoration:underline;">log in</a> before making a payment.</p>
+    </div>
+
+    <div class="sc-card hidden" id="verify-required-card">
+      <h1 class="sc-display" style="font-size:1.3rem;">Verify your email first</h1>
+      <p class="text-slate-200 text-sm">Check your inbox for the verification link, then reload this page.</p>
+      <button class="sc-btn sc-btn--secondary" type="button" id="resend-btn">Resend Email</button>
+      <div id="verify-alert" class="sc-alert"></div>
     </div>
 
     <div class="sc-card sc-card--wide hidden" id="classes-card">

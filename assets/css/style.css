@@ -93,6 +93,13 @@ main {
   line-height: 1.5;
 }
 
+.sc-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  margin-top: 4px;
+}
+
 .sc-label {
   display: block;
   text-align: left;

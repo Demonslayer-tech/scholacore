@@ -16,19 +16,12 @@
   </header>
 
   <main>
-    <div class="sc-card" id="login-card">
+    <div class="sc-card sc-card--center" id="loading-card">
       <div class="sc-logo-header">
         <img src="/assets/images/scholacore-emblem.png" alt="ScholaCore" class="sc-emblem" />
       </div>
-      <h1 class="sc-display" style="text-align:center;font-size:1.3rem;">Teacher Login</h1>
-      <form id="login-form">
-        <label class="sc-label" for="email">Email</label>
-        <input class="sc-input" id="email" type="email" required />
-        <label class="sc-label" for="password">Password</label>
-        <input class="sc-input" id="password" type="password" required />
-        <button class="sc-btn" type="submit">Log In</button>
-      </form>
-      <div id="login-alert" class="sc-alert"></div>
+      <div class="sc-spinner"></div>
+      <p style="margin-top:12px;">Loading...</p>
     </div>
 
     <div class="sc-card hidden" id="pending-card">
@@ -48,7 +41,10 @@
     </div>
 
     <div class="sc-card sc-card--wide hidden" id="portal-card">
-      <h2 class="text-lg font-bold" style="color:#ffffff;">Welcome, <span id="teacher-name"></span></h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2 class="text-lg font-bold" style="color:#ffffff;margin:0;">Welcome, <span id="teacher-name"></span></h2>
+        <button class="sc-btn sc-btn--secondary sc-btn--inline" type="button" id="logout-btn">Log Out</button>
+      </div>
       <p class="text-slate-200 text-sm">Status: <span class="sc-badge sc-badge--approved">approved</span></p>
 
       <h3 class="font-semibold mt-6" style="color:#ffffff;">My Schedule</h3>

@@ -69,7 +69,7 @@ form.addEventListener('submit', async (e) => {
       reviewedAt: null
     });
 
-    showAlert(alertEl, "Application submitted. We'll email you once it's reviewed.", 'success');
+    showAlert(alertEl, "Application submitted. We'll email you once it's reviewed, then you can log in.", 'success');
     form.reset();
   } catch (err) {
     showAlert(alertEl, err && err.message ? err.message : 'Submission failed', 'error');

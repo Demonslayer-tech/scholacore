@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ScholaCore: Teacher Vetting Application</title>
+  <title>ScholaCore: Teacher Sign Up</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" href="/assets/images/scholacore-emblem.png" />
@@ -19,7 +19,7 @@
       <div class="sc-logo-header">
         <img src="/assets/images/scholacore-emblem.png" alt="ScholaCore" class="sc-emblem" />
       </div>
-      <h1 class="sc-display" style="text-align:center;font-size:1.3rem;">Teacher Vetting Application</h1>
+      <h1 class="sc-display" style="text-align:center;font-size:1.3rem;">Apply to Teach</h1>
       <p class="text-slate-200 text-sm">Submit your credentials for review by our admissions team.</p>
 
       <form id="vetting-form">
@@ -45,6 +45,10 @@
       </form>
 
       <div id="alert" class="sc-alert"></div>
+
+      <p class="text-center mt-4 text-sm">
+        Already applied? <a href="/teacher-login.html" style="color:#ffffff;text-decoration:underline;">Log in</a>
+      </p>
     </div>
   </main>
 
@@ -53,6 +57,6 @@
     <a href="/terms-of-service.html">Terms of Service</a>
   </footer>
 
-  <script type="module" src="/assets/js/pages/teacher-vetting.js"></script>
+  <script type="module" src="/assets/js/pages/teacher-signup.js"></script>
 </body>
 </html>

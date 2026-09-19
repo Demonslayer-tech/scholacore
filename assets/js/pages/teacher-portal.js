@@ -1,8 +1,7 @@
 import { auth, db } from '/api/firebase-config.php';
-import { initTelegramWebApp, showAlert } from '/assets/js/telegram.js';
+import { initTelegramWebApp } from '/assets/js/telegram.js';
 import {
   onAuthStateChanged,
-  signInWithEmailAndPassword,
   signOut
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import {
@@ -23,29 +22,25 @@ function el(id) {
   return found;
 }
 
-const loginAlert = el('login-alert');
-const loginForm = el('login-form');
+const loadingCard = el('loading-card');
 
-loginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const email = el('email').value.trim();
-  const password = el('password').value;
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (err) {
-    showAlert(loginAlert, err && err.message ? err.message : 'Log in failed', 'error');
-  }
+el('logout-btn').addEventListener('click', async () => {
+  await signOut(auth);
+  window.location.href = '/teacher-login.html';
 });
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) return;
+  if (!user) {
+    window.location.href = '/teacher-login.html';
+    return;
+  }
 
   const userSnap = await getDoc(doc(db, 'users', user.uid));
   const userData = userSnap.data();
 
   if (!userSnap.exists() || !userData || userData.role !== 'teacher') {
-    showAlert(loginAlert, 'This account is not registered as a teacher.', 'error');
     await signOut(auth);
+    window.location.href = '/teacher-login.html';
     return;
   }
 
@@ -53,7 +48,7 @@ onAuthStateChanged(auth, async (user) => {
   const teacherData = teacherSnap.data();
   const status = (teacherData && teacherData.status) || 'pending_vetting';
 
-  el('login-card').classList.add('hidden');
+  loadingCard.classList.add('hidden');
 
   if (status === 'pending_vetting') {
     el('pending-card').classList.remove('hidden');

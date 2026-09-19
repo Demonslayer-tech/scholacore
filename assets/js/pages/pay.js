@@ -1,7 +1,7 @@
 import { auth, db } from '/api/firebase-config.php';
 import { PAYSTACK_PUBLIC_KEY } from '/api/paystack-config.php';
 import { initTelegramWebApp, showAlert } from '/assets/js/telegram.js';
-import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { onAuthStateChanged, sendEmailVerification } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import {
   doc,
   getDoc,
@@ -22,6 +22,7 @@ function el(id) {
 const loadingCard = el('loading-card');
 const payCard = el('pay-card');
 const loginRequiredCard = el('login-required-card');
+const verifyRequiredCard = el('verify-required-card');
 const classesCard = el('classes-card');
 const payBtn = el('pay-btn');
 const alertEl = el('alert');
@@ -30,7 +31,7 @@ let currentUid = null;
 let currentEmail = null;
 
 function showOnly(card) {
-  [loadingCard, payCard, loginRequiredCard, classesCard].forEach((c) => c.classList.add('hidden'));
+  [loadingCard, payCard, loginRequiredCard, verifyRequiredCard, classesCard].forEach((c) => c.classList.add('hidden'));
   card.classList.remove('hidden');
 }
 
@@ -39,22 +40,34 @@ onAuthStateChanged(auth, async (user) => {
     showOnly(loginRequiredCard);
     return;
   }
+
+  if (!user.emailVerified) {
+    showOnly(verifyRequiredCard);
+    return;
+  }
+
   currentUid = user.uid;
+  currentEmail = user.email;
 
   const userSnap = await getDoc(doc(db, 'users', user.uid));
   const userData = userSnap.data() || {};
-
-  // Telegram sign-in (custom token) doesn't carry an email -- Paystack
-  // still needs one, so fall back to a synthetic address tied to the
-  // account. It's never shown to the student; it's only Paystack's
-  // receipt/lookup field.
-  currentEmail = user.email || userData.email || (user.uid + '@telegram.scholacore.ng');
 
   if (userData.paymentStatus === 'active_paid') {
     showOnly(classesCard);
     await loadClasses();
   } else {
     showOnly(payCard);
+  }
+});
+
+el('resend-btn').addEventListener('click', async () => {
+  const verifyAlert = el('verify-alert');
+  if (!auth.currentUser) return;
+  try {
+    await sendEmailVerification(auth.currentUser);
+    showAlert(verifyAlert, 'Verification email resent.', 'success');
+  } catch (err) {
+    showAlert(verifyAlert, err && err.message ? err.message : 'Could not resend email.', 'error');
   }
 });
 
